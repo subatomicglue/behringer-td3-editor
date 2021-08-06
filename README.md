@@ -1,9 +1,35 @@
+# Behringer TD3 Editor
+
+An editor for the Behringer TD3 written in Angular and NodeJS, packaged into an Electron application.
+
+- status:  ** work in progress **.
+  - editor works/tested on MacOS MacBookPro 2019 / Raspberry Pi (8mb) with official 7" touchscreen, both with USB midi to the TD3.
+
+- TODO:
+  - document how to build all targets (below is simply the default README.md from `angular-electron` project).
+  - rPI needs some polish
+    - window in fullscreen mode
+    - some weird shifting of the grid when adding a note, probably Angular lifecycle with the `pattern` object changing that can be changed
+    - a little slow (tap on a grid cell, and watch it update <1sec later)
+  - MIDI needs some polish
+    - Currently we search for the "TD-3" midi device, that works for USB.   I'd like to provide a fallback in the UI to select the MIDI device in case using a standard midi cable.
+  - rPI build/installation is automated, but the scripts are not available here...  yet.
+  - MIDI interface is on the nodejs side, using the RtMIDI c++ libs, it could be interesting to also provide a Web MIDI implementation as well for a completely browser based solution, avoid all the RPC calls from the Electron Renderer to Node side..
+  - experimental, unrelated to TD3...
+    - when no midi device attached, I have a tiny web technology synth running (using the Web Audio api)...  I could improve it...
+      - there is no slide
+      - supply some better tones
+      - maybe a way to select them...
+
+------------------------------------------------------------
+
 [![Angular Logo](https://www.vectorlogo.zone/logos/angular/angular-icon.svg)](https://angular.io/) [![Electron Logo](https://www.vectorlogo.zone/logos/electronjs/electronjs-icon.svg)](https://electronjs.org/)
 
 ![Maintained][maintained-badge]
 [![Make a pull request][prs-badge]][prs]
 [![License][license-badge]](LICENSE.md)
 
+[![Raspberry Pi Build][rasberrypi-build-badge]][rasberrypi-build]
 [![Linux Build][linux-build-badge]][linux-build]
 [![MacOS Build][macos-build-badge]][macos-build]
 [![Windows Build][windows-build-badge]][windows-build]
