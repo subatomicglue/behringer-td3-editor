@@ -1,0 +1,83 @@
+
+<div class="container" *ngIf="!pattern">
+  LOADING PATTERN...
+</div>
+
+<div class="container" (window:keypress)="onKeyDown( $event )" *ngIf="pattern">
+  <div class="header">
+    <!--
+    <h1><a routerLink="/detail">&lt;-- </a> Behringer TD-3 editor/programmer ({{ name }} {{ model }} ver {{ version }})</h1>
+    -->
+    <table class="seq">
+      <tr class="row">
+        <td class="cell-rowname">&nbsp;&nbsp;</td>
+        <td [ngClass]="{'cell': lastStep != step, 'cell-sel':  lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step" (mousedown)="selectColumn($event, step)">&nbsp;&nbsp;</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="content">
+    <table class="seq">
+      <tr class="row" *ngFor="let row_pitch of rows.slice().reverse()">
+        <td [ngClass]="{'cell-rowname':true, 'pianowhite': pianowhite[row_pitch % pianowhite.length]}"><span *ngIf="row_pitch % 12 == 0">{{pianonotes[row_pitch % 12]}}{{mathRef.floor( row_pitch/12 )}}</span></td>
+        <td [ngClass]="{'cell': !(lastPitch == row_pitch && lastStep == step), 'cell-sel':  lastPitch == row_pitch && lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step">
+            <span [ngClass]="{ 'note-off': !(pitch == row_pitch && pattern.rests[step] == 0), 'note-on': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.accents[step] == 0), 'note-on-accent': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.accents[step] == 1) }" (mousedown)="setPitch($event, step, row_pitch, 0)"></span><span [ngClass]="{ 'note-off': !(pitch == row_pitch && pattern.rests[step] == 0) || (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 0), 'note-on': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 1 && pattern.accents[step] == 0), 'note-on-accent': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 1 && pattern.accents[step] == 1) }" (mousedown)="setPitch($event, step, row_pitch, 1)"></span>
+          <!-- {{ pattern.rests[step] == 1 ? '&nbsp;&nbsp;' : (pitch == row_pitch ? ((pattern.accents[step] == 1 ? "a" : "-") + (pattern.slides[step] == 1 ? "s" : "-")) : '&nbsp;&nbsp;' )}} -->
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span>
+        <!---
+        <a *ngFor="let pitch of pattern.pitches; index as i" (mousedown)="incPitch($event, i)">[{{i}}] {{ pattern.pitches[i] }}{{ pattern.rests[i] == 0 ? "x" : "_" }}{{ pattern.accents[i] == 1 ? "a" : "_" }}{{ pattern.slides[i] == 1 ? "s" : "_" }}</a>
+        -->
+      <div [ngClass]="{'button': !isPlaying, 'button-disabled':  isPlaying}" (click)="start()">start</div>
+      <div [ngClass]="{'button': isPlaying, 'button-disabled':  !isPlaying}" (click)="stop()">stop</div>
+      <span class="bpm">
+        <div class="button" (click)="setBpm( bpm - 5 )">-</div>
+        {{ bpm }}bpm
+        <div class="button" (click)="setBpm( bpm + 5 )">+</div>
+      </span>
+      <div [ngClass]="{'button': lastPitch != -1 && lastStep != -1, 'button-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</div>
+    </span>
+    <!-- <div class="button" (click)="getPattern()">refresh</div> -->
+    patch
+    <select (change)="groupChange($event)" id="group_select" value=0x00>
+      <option value="0x00" selected>I</option>
+      <option value="0x01">II</option>
+      <option value="0x02">III</option>
+      <option value="0x03">IV</option>
+    </select>
+    <select (change)="sectionChange($event)" id="section_select" value=0x00>
+      <option value="0x00" selected>A 1</option>
+      <option value="0x01">A 2</option>
+      <option value="0x02">A 3</option>
+      <option value="0x03">A 4</option>
+      <option value="0x04">A 5</option>
+      <option value="0x05">A 6</option>
+      <option value="0x06">A 7</option>
+      <option value="0x07">A 8</option>
+      <option value="0x08">B 1</option>
+      <option value="0x09">B 2</option>
+      <option value="0x0a">B 3</option>
+      <option value="0x0b">B 4</option>
+      <option value="0x0c">B 5</option>
+      <option value="0x0d">B 6</option>
+      <option value="0x0e">B 7</option>
+      <option value="0x0f">B 8</option>
+    </select>
+    steps
+    <select (change)="stepCountChange($event)" id="step_count" [(ngModel)]="pattern.step_count">
+      <option *ngFor="let c of step_count_values" [ngValue]="c">{{c}}</option>
+    </select>
+    <select (change)="openPort($event)" id="midiout" [(ngModel)]="midiout">
+      <option *ngFor="let c of ports" [ngValue]="c">{{c}}</option>
+    </select>
+
+    <!--
+      <span (click)="selectColumn($event, -1)">smart ui for {{ name }} (model {{ model }} ver {{ version }})</span>
+    -->
+  </div>
+</div>

@@ -1,0 +1,141 @@
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.header {
+  flex-shrink: 0;
+}
+.content {
+  flex-grow: 1;
+  overflow: auto;
+  min-height: 2em;
+}
+.footer{
+  flex-shrink: 0;
+}
+
+
+/* override browser default */
+html, body, .container {
+  margin: 0;
+  padding: 0;
+  overflow-y:hidden;
+  user-select: none;
+}
+
+/* use viewport-relative units to cover page fully */
+html, body {
+  height: 100vh;
+  width: 100vw;
+  position:relative;
+}
+
+html, body {
+  font-family: Arial, Helvetica, sans-serif;
+  color: white;
+  background-color: #252526;
+  //background-color: white;
+  cursor: pointer;
+}
+
+
+a, a:hover, a:visited {
+  color: silver;
+  text-decoration: none;
+}
+
+.seq {
+  width:100%;
+}
+.seq, .cell, .cell-rowname, .row, .cell-sel, .note-on, .note-off, .note-on-accent {
+  padding: 0;
+  margin: 0;
+  border-spacing: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+.cell, .cell-rowname, .cell-sel {
+  cursor: pointer;
+  font-family: monospace;
+  //border: 1px solid darkslateblue;
+  border: 1px solid #543344;
+  // border-top: 1px solid #443344;
+  // border-left: 1px solid #443344;
+  // border-right: 1px solid #443344;
+  // border-bottom: 1px solid #443344;
+}
+.cell, .cell-sel {
+  width: auto;
+}
+.cell-rowname {
+  width: 2.25em;
+  max-width: 2.25em;
+  background-color: #050505;
+  border: 1px solid #030303;
+  text-align: right;
+}
+.pianowhite {
+  background-color: #444444;
+  border: 1px solid #333333;
+  //color: #252526;
+}
+.cell-sel {
+  border: 1px solid orange;
+  // border-top: 0.5px solid orange;
+  // border-left: 0.5px solid orange;
+  // border-right: 0.5px solid orange;
+  // border-bottom: 0.5px solid orange;
+}
+.row {
+  width: 100%;
+}
+
+.note-off, .note-on, .note-on-accent {
+  width: 50%;
+  height: 100%;
+  min-height: 100%;
+  display: inline-table;
+}
+
+.note-on-accent {
+  background-color: yellow;
+}
+.note-on {
+  //background-color: peru;
+  background-color: lightblue;
+}
+.note-on::before, .note-off::before, .note-on-accent::before {
+  content: "\200B";
+}
+.note-off {
+  background-color: black;
+}
+
+.bpm {
+  cursor: pointer;
+}
+
+.button {
+  display: inline-block;
+  background-color: lightblue;
+  color: black;
+  padding: 1em;
+  margin: .2em;
+}
+.button-disabled {
+  display: inline-block;
+  background-color: lightblue;
+  color: grey;
+  padding: 1em;
+  margin: .2em;
+}
+
+H1 {
+  margin: 0;
+  font-size: 1em;
+}
