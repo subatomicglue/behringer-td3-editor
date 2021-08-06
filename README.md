@@ -7,7 +7,7 @@ An editor for the Behringer TD3 written in Angular and NodeJS, packaged into an 
 - status:  ** work in progress **.
   - editor works/tested on:
     - MacOS MacBookPro 2019 (Catalina)
-    - Raspberry Pi (8mb) with [official 7" touchscreen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/)
+    - Raspberry Pi (8mb) with [official 7" touchscreen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/)  ([Buster 2021-05-07](https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/))
     - ...all tests with USB-midi to the TD-3
 
 - TODO:
