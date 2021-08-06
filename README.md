@@ -1,12 +1,12 @@
 # Behringer TD3 Editor
 
-An editor for the Behringer TD3 written in Angular and NodeJS, packaged into an Electron application.
+An editor for the Behringer TD3 written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
 
 ![screenshot](screenshot.jpg)
 
 - status:  ** work in progress **.
   - editor works/tested on:
-    - MacOS MacBookPro 2019 (Catalina)
+    - MacOS MacBookPro 2019 (Catalina 10.15.7)
     - Raspberry Pi (8mb) with [official 7" touchscreen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/)  ([Buster 2021-05-07](https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/))
     - ...all tests with USB-midi to the TD-3
 
