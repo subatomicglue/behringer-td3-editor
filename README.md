@@ -1,6 +1,10 @@
 # Behringer TD3 Editor
 
-An editor for the Behringer TD3 written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
+A standalone editor for the Behringer TD3 written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
+
+Running either as
+ - dedicated hardware (raspberry pi based)
+ - software app  (MacOS, Win, Linux)
 
 ![screenshot](screenshot.jpg)
 
@@ -11,6 +15,7 @@ An editor for the Behringer TD3 written in Angular (12) and NodeJS (14), package
     - ...all tests with USB-midi to the TD-3
 
 - TODO:
+  - provide some packages for download so people dont need to build them from code
   - document how to build all targets (below is simply the default README.md from `angular-electron` project).
   - rPI needs some polish
     - window in fullscreen mode
