@@ -2,7 +2,7 @@
   "name": "BehringerTD3editorprogrammer",
   "version": "1.0.0",
   "URL": "https://www.subatomicglue.com/",
-  "description": "Editor for Behringer TD3.  Because of TD3's horrible Ux for editing patterns (no thanks to roland tb303, it's their Ux design, but WHY copy it without any improvements Behinger???).  SOAPBOX! :)",
+  "description": "An amazing pattern editor for the Behringer TD3 bassline synthesizer. Because the TD3 has a very difficult Ux for editing patterns.  Which is no thanks to the Roland TB303 designed in the 80's, iconic, but immesely obtuse to edit, Behringer nailed THAT design 100%. So really we are improving on Roland's Ux design, but WHY copy it without any improvements, Behinger???  ME ON MY SOAPBOX! :)  Anyways, enjoy!",
   "homepage": "https://github.com/maximegris/angular-electron",
   "author": "K.Meinert <kevinNOSPAMMMMREMOVETHIS@subatomicglue.com> (https://www.subatomicglue.com/)",
   "URL": "https://www.subatomicglue.com/",
