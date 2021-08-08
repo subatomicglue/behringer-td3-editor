@@ -11,7 +11,7 @@ Running as:
 - status:  ** work in progress **.
   - editor works/tested on:
     - MacOS MacBookPro 2019 (Catalina 10.15.7)
-    - Raspberry Pi (8mb) with [official 7" touchscreen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/)  ([Buster 2021-05-07](https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/))
+    - Raspberry Pi (8gb) with [official 7" touchscreen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/)  ([Buster 2021-05-07](https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/))
     - ...all tests with USB-midi to the TD-3
 
 - TODO:
