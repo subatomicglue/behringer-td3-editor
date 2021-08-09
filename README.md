@@ -15,18 +15,20 @@ Running as:
     - ...all tests with USB-midi to the TD-3
 
 - TODO:
-  - provide some packages for download so people dont need to build them from code
-  - document how to build all targets (below is simply the default README.md from `angular-electron` project).
+  - provide some way for people to download pre-built packages for their OS
+  - document how to build on each of Win/Lin/Mac/Raspi targets (below is simply the default README.md from `angular-electron` project).
   - rPI needs some polish
     - window in fullscreen mode
     - some weird shifting of the grid when adding a note, probably Angular lifecycle with the `pattern` object changing that can be changed
     - a little slow (tap on a grid cell, and watch it update <1sec later)
+    - rPI build/installation is automated, but the scripts are not available here...  yet.  (less important if we can publish pre-built packages for download) 
   - MIDI needs some polish
-    - Currently we search for the "TD-3" midi device, that works for USB.   I'd like to provide a fallback in the UI to select the MIDI device in case using a standard midi cable.
-  - rPI build/installation is automated, but the scripts are not available here...  yet.
+    - Currently we search for the "TD-3" midi device, if found, use it!   That works for USB MIDI.   
+    - I'd like to provide a fallback in the UI to select the MIDI device in case using a standard midi cable.
   - MIDI interface is on the nodejs side, using the RtMIDI c++ libs, it could be interesting to also provide a Web MIDI implementation as well for a completely browser based solution, avoid all the RPC calls from the Electron Renderer to Node side..
+    - Having midi on nodejs side might be more performant for the sequencer timing, since it operates in a separate thread from the renderer, no competition might be better - considering javascript's single thread model.
   - experimental, unrelated to TD3...
-    - when no midi device attached, I have a tiny web technology synth running (using the Web Audio api)...  I could improve it...
+    - when no midi device attached, I have a tiny web tech synth running (using the Web Audio api)...  I could improve it...
       - there is no slide
       - supply some better tones
       - maybe a way to select them...
