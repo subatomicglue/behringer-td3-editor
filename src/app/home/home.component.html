@@ -28,56 +28,45 @@
     </table>
   </div>
 
-  <div class="footer">
-    <span>
-        <!---
-        <a *ngFor="let pitch of pattern.pitches; index as i" (mousedown)="incPitch($event, i)">[{{i}}] {{ pattern.pitches[i] }}{{ pattern.rests[i] == 0 ? "x" : "_" }}{{ pattern.accents[i] == 1 ? "a" : "_" }}{{ pattern.slides[i] == 1 ? "s" : "_" }}</a>
-        -->
+  <div (click)="selectColumn($event, -1)" class="footer">
+    <div>
+      <div class="button" (click)="onGroupButton($event)">Group {{(["I","II","III","IV"])[pattern.group]}}</div>
+      <div class="button" (click)="setSection(0)">A1</div>
+      <div class="button" (click)="setSection(1)">A2</div>
+      <div class="button" (click)="setSection(2)">A3</div>
+      <div class="button" (click)="setSection(3)">A4</div>
+      <div class="button" (click)="setSection(4)">A5</div>
+      <div class="button" (click)="setSection(5)">A6</div>
+      <div class="button" (click)="setSection(6)">A7</div>
+      <div class="button" (click)="setSection(7)">A8</div>
+      <div class="button" (click)="setSection(8)">B1</div>
+      <div class="button" (click)="setSection(9)">B2</div>
+      <div class="button" (click)="setSection(10)">B3</div>
+      <div class="button" (click)="setSection(11)">B4</div>
+      <div class="button" (click)="setSection(12)">B5</div>
+      <div class="button" (click)="setSection(13)">B6</div>
+      <div class="button" (click)="setSection(14)">B7</div>
+      <div class="button" (click)="setSection(15)">B8</div>
+    </div>
+    <div>
       <div [ngClass]="{'button': !isPlaying, 'button-disabled':  isPlaying}" (click)="start()">start</div>
       <div [ngClass]="{'button': isPlaying, 'button-disabled':  !isPlaying}" (click)="stop()">stop</div>
-      <span class="bpm">
-        <div class="button" (click)="setBpm( bpm - 5 )">-</div>
-        {{ bpm }}bpm
-        <div class="button" (click)="setBpm( bpm + 5 )">+</div>
-      </span>
+      <div class="button" (click)="onBpmButton($event)">{{ bpm }} bpm</div>
+      <div class="button" (click)="onStepsButton($event)">steps {{pattern.step_count}}</div>
       <div [ngClass]="{'button': lastPitch != -1 && lastStep != -1, 'button-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</div>
-    </span>
-    <!-- <div class="button" (click)="getPattern()">refresh</div> -->
-    patch
-    <select (change)="groupChange($event)" id="group_select" value=0x00>
-      <option value="0x00" selected>I</option>
-      <option value="0x01">II</option>
-      <option value="0x02">III</option>
-      <option value="0x03">IV</option>
-    </select>
-    <select (change)="sectionChange($event)" id="section_select" value=0x00>
-      <option value="0x00" selected>A 1</option>
-      <option value="0x01">A 2</option>
-      <option value="0x02">A 3</option>
-      <option value="0x03">A 4</option>
-      <option value="0x04">A 5</option>
-      <option value="0x05">A 6</option>
-      <option value="0x06">A 7</option>
-      <option value="0x07">A 8</option>
-      <option value="0x08">B 1</option>
-      <option value="0x09">B 2</option>
-      <option value="0x0a">B 3</option>
-      <option value="0x0b">B 4</option>
-      <option value="0x0c">B 5</option>
-      <option value="0x0d">B 6</option>
-      <option value="0x0e">B 7</option>
-      <option value="0x0f">B 8</option>
-    </select>
-    steps
-    <select (change)="stepCountChange($event)" id="step_count" [(ngModel)]="pattern.step_count">
-      <option *ngFor="let c of step_count_values" [ngValue]="c">{{c}}</option>
-    </select>
+      <div class="button" (click)="exit()" style="float:right">pwr</div>
+    </div>
+
+    <!-- midi port selector -->
+    <!--
     <select (change)="openPort($event)" id="midiout" [(ngModel)]="midiout">
       <option *ngFor="let c of ports" [ngValue]="c">{{c}}</option>
     </select>
+    -->
 
+      <!-- <span (click)="selectColumn($event, -1)">smart ui for {{ name }} (model {{ model }} ver {{ version }})</span> -->
     <!--
-      <span (click)="selectColumn($event, -1)">smart ui for {{ name }} (model {{ model }} ver {{ version }})</span>
+    <div [ngClass]="{'button': true, 'button-disabled':  false}" (click)="init()">connect</div>
     -->
   </div>
 </div>

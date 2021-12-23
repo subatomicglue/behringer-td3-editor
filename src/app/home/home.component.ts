@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone, HostListener } from '@angular/core';
+import { Component, OnInit, NgZone, HostListener, OnChanges/*, SimpleChanges*/ } from '@angular/core';
 import { Router } from '@angular/router';
 import { ElectronService } from '../core/services/electron/electron.service';
 import * as td3 from '../../../app/td3';
@@ -8,8 +8,7 @@ import * as stepseq from '../../../app/stepseq';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
-
+export class HomeComponent implements OnInit/*, OnChanges*/ {
   midiout;
   td3 = td3;
   ports;
@@ -48,11 +47,18 @@ export class HomeComponent implements OnInit {
     console.log('[HomeComponent] ngOnInit()');
     this.init();
   }
-  openPort( e ) {
+  // ngOnChanges(changes: SimpleChanges) {
+  //   // changes.prop contains the old and the new value...
+  //   console.log( "Changes: " )
+  //   console.log( changes.prop )
+  // }
+
+  async openPort( e ) {
     console.log( "openPort", e.target.value );
     //await td3.open( e );
   }
   async init() {
+    await td3.close();
     await td3.open();
     this.ports = await td3.getPorts();
     if (await td3.isOpen()) {
@@ -71,30 +77,30 @@ export class HomeComponent implements OnInit {
     await this.getPattern();
     this.bpm = await this.seq.getBpm();
   }
+  reconnect() {
+    this.init();
+  }
 
   async sectionChange(e) {
-    this.pattern.section = parseInt( e.target.value )
-    console.log( "section", this.pattern.section )
-    await this.getPattern();
+    await this.setSection( parseInt( e.target.value ) );
   }
   async groupChange(e) {
-    this.pattern.group = parseInt( e.target.value )
-    console.log( "group", this.pattern.group )
-    await this.getPattern();
+    await this.setGroup( parseInt( e.target.value ) );
   }
   async stepCountChange(e) {
-    this.pattern.step_count = parseInt( e.target.value )
-    console.log( "step_count", this.pattern.step_count )
-    this.onPatternChanged();
+    await this.setStepCount( parseInt( e.target.value ) );
   }
   async onPatternChanged() {
-    console.log( this.pattern );
-    console.log( "are these undefined??", this.pattern.group, this.pattern.section, this.pattern.step_count );
+    //console.log( this.pattern );
+    //console.log( "are these undefined??", this.pattern.group, this.pattern.section, this.pattern.step_count );
     this.pattern.ties = this.pattern.ties.map( r => 1 )
     if (await td3.isOpen()) {
       await td3.send( td3.Send.SET_PATTERN( this.pattern ) );
       await this.getPattern();
     }
+    //console.log( JSON.stringify( this.pattern ) );
+  }
+  out() {
     console.log( JSON.stringify( this.pattern ) );
   }
   async start() {
@@ -131,24 +137,11 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  async incPitch( event, i ) {
-    //console.log( event);
-    //console.log( "shiftKey", event.shiftKey, "ctrlKey", event.ctrlKey, "altKey", event.altKey, "metaKey", event.metaKey )
-    if (event.shiftKey)
-      this.pattern.pitches[i] += 1;
-    else if (event.ctrlKey) {
-      this.pattern.rests[i] = !this.pattern.rests[i];
-      if (this.pattern.rests[i] == 0)
-        this.pattern.pitches[i] = 0x18
-    }
-    else if (event.altKey)
-      this.pattern.accents[i] = !this.pattern.accents[i];
-    else if (event.metaKey)
-      this.pattern.slides[i] = !this.pattern.slides[i];
-    else
-      this.pattern.pitches[i] -= 1;
-    
-    this.onPatternChanged();
+  barf = true;
+  async tog() {
+    this.pattern = await td3.send( td3.Send.GET_PATTERN( this.pattern.group, this.pattern.section ) )
+    this.barf = !this.barf
+    this.pattern.pitches[4] = this.barf ? 24 : 32
   }
 
   toggleAccent() {
@@ -171,6 +164,7 @@ export class HomeComponent implements OnInit {
       this.lastStep = step;
     else
       this.lastStep = -1
+    //event.stopPropagation();
   }
 
   async setPitch( event, step, pitch, slide ) {
@@ -199,7 +193,7 @@ export class HomeComponent implements OnInit {
 
         return
       }
-  
+
       // disable
       this.pattern.rests[step] = 1;
       this.pattern.pitches[step] = 0x18;
@@ -231,5 +225,57 @@ export class HomeComponent implements OnInit {
     console.log( "undo!" )
   }
 
+  @HostListener('document:keydown.esc')
+  @HostListener('document:keydown.q')
+  async exit() {
+    await this.electronService.ipcRenderer.invoke( 'exit' );
+  }
 
+  event2xy( e ) {
+    var rect = e.target.getBoundingClientRect();
+    var x = e.clientX - rect.left; //x position within the element.
+    var y = e.clientY - rect.top;  //y position within the element.
+    return [x,y]
+  }
+  event2wh( e ) {
+    var rect = e.target.getBoundingClientRect();
+    var w = rect.right - rect.left; //x position within the element.
+    var h = rect.bottom - rect.top;  //y position within the element.
+    return [w,h]
+  }
+
+  // tap on the left of the button to dec, right of the button to inc.
+  onStepsButton(e){
+    this.event2xy(e)[0] < (this.event2wh(e)[0]/2) ?
+      (this.pattern.step_count = this.pattern.step_count <= 1  ?  1 : this.pattern.step_count - 1) :
+      (this.pattern.step_count = 16 <= this.pattern.step_count ? 16 : this.pattern.step_count + 1);
+    this.onPatternChanged();
+  }
+
+  // tap on the left of the button to dec, right of the button to inc.
+  onBpmButton(e){
+    this.setBpm( this.event2xy(e)[0] < (this.event2wh(e)[0]/2) ? this.bpm - 5 : this.bpm + 5 )
+  }
+
+  // tap on the left of the button to dec, right of the button to inc.
+  onGroupButton(e){
+    console.log( this.pattern.group )
+    this.setGroup( this.event2xy(e)[0] < (this.event2wh(e)[0]/2) ? Math.max( 0, this.pattern.group - 1 ) : Math.min( 3, this.pattern.group + 1 ) )
+    console.log( this.pattern.group )
+  }
+
+  async setStepCount( sc ) {
+    this.pattern.step_count = sc
+    this.onPatternChanged();
+  }
+
+  async setSection( s ) {
+    this.pattern.section = s;
+    await this.getPattern();
+  }
+
+  async setGroup( g ) {
+    this.pattern.group = g;
+    await this.getPattern();
+  }
 }

@@ -409,7 +409,7 @@ function unpackPattern( msg ) {
   // you would think that 16 pitches correspond to 16 rests, and if you turn off a rest then the machine simply skips that pitch.  NOPE.
   // f**king tb-303 and it's user "interface"...
   // figures
-  // well, that's why i'm writing this in the first place.   
+  // well, that's why i'm writing this in the first place.
   // the stupid tb-303 "user interface" atrocity of entering in pitches/accents/rests separately from each other, who thinks like that?
   // yes, it lends itself to serendipitous random patterns you wouldn't normally get...
   // ...but to actually enter anything deliberately is exceedingly HARD.
@@ -424,7 +424,7 @@ function unpackPattern( msg ) {
   // 2.) who creates all these 1:1 arrays, where each slot is 1 step, BUT THEN pitches are NOT 1:1 with steps, they're 1:1 with turned-off-rests!?!
   // yeah.  that's what it (f**king) does.
   // There isNOT a 1:1 between the rest and pitch slots. (?!?!)
-  // There is 1:1 between every.. other.. slot!!  just not pitch.  it's special.   for some reason.  
+  // There is 1:1 between every.. other.. slot!!  just not pitch.  it's special.   for some reason.
   // so we're going to unpack the pitches to be 1:1 with the corresponding slots so we can rationalize/edit about them, at all, in the editor.
   // user ergonomics people.  sheesh.
 
@@ -437,18 +437,18 @@ function unpackPattern( msg ) {
 
 function packPattern( pattern ) {
   // re-pack the rest=0 (active note) pitches/slides/accents to the front of array (see unpackPattern() for commentary)
-  pattern.pitches = packArrayByRests( pattern.pitches, pattern.rests, 0x18 );
-  pattern.slides = packArrayByRests( pattern.slides, pattern.rests, 0 );
-  pattern.accents = packArrayByRests( pattern.accents, pattern.rests, 0 );
+  let pitches = packArrayByRests( pattern.pitches, pattern.rests, 0x18 );
+  let slides = packArrayByRests( pattern.slides, pattern.rests, 0 );
+  let accents = packArrayByRests( pattern.accents, pattern.rests, 0 );
 
   let msg = sysex_td3( new Array( (0x79-0x7) + 1 ).fill(0) )
   msg[0x7] = 0x78; // always 0x78
   msg[0x8] = pattern.group;
   msg[0x9] = pattern.section;
   copyArray( msg, 0x0A, 0x0B, td3_split_byte( 0 ) );
-  copyArray( msg, 0x0C, 0x2B, td3_split_byte( pattern.pitches ) );
-  copyArray( msg, 0x2C, 0x4B, td3_split_byte( pattern.accents ) );
-  copyArray( msg, 0x4C, 0x6B, td3_split_byte( pattern.slides  ) );
+  copyArray( msg, 0x0C, 0x2B, td3_split_byte( pitches ) );
+  copyArray( msg, 0x2C, 0x4B, td3_split_byte( accents ) );
+  copyArray( msg, 0x4C, 0x6B, td3_split_byte( slides  ) );
   copyArray( msg, 0x6C, 0x6D, td3_split_byte( pattern.triplet_mode ) );
   copyArray( msg, 0x6E, 0x6F, td3_split_byte( pattern.step_count ) );
   copyArray( msg, 0x70, 0x71, td3_split_byte( 0 ) );
@@ -791,13 +791,19 @@ function useNode( midi ) {
   }
 
   function midi_close() {
-    console.log( "[td3] closing input" );
-    node_state.input.closePort();
-    console.log( "[td3] closing output" );
-    node_state.output.closePort();
+    if (node_state.input) {
+      console.log( "[td3] closing input" );
+      node_state.input.closePort();
+      delete node_state.input;
+      node_state.input = undefined;
+    }
 
-    delete node_state.input;
-    delete node_state.output;
+    if (node_state.output) {
+      console.log( "[td3] closing output" );
+      node_state.output.closePort();
+      delete node_state.output;
+      node_state.output = undefined;
+    }
     //process.exit( 0 );
   }
 
@@ -815,7 +821,7 @@ function useNode( midi ) {
 function useElectronBrowser( ipcRenderer ) {
   function bind( func ) { module.exports[func] = async (...args) => {
     let result = await ipcRenderer.invoke('td3', func, ...args );
-    console.log( 
+    console.log(
       [
         `[td3] ipcRenderer.invoke('td3', "${func}"`,
         ...args.map( r => `${JSON.stringify( r )}` )
@@ -845,7 +851,7 @@ function useElectronBrowser( ipcRenderer ) {
           /* code goes here */
         })
       }).
-      
+
       And on the NodeJS side, use:
       win.webContents.send( 'handler', code_str, value );
     `);

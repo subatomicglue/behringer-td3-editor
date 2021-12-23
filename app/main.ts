@@ -56,6 +56,15 @@ ipcMain.handle('td3', async (event, FUNC, ...values) => {
   return result;
 })
 
+// one renderer binding to rule all of td3...
+// call it from the renderer like so:
+//   let result = await this.electronService.ipcRenderer.invoke( 'td3', 'setBpm', bpm );
+ipcMain.handle('exit', async (event, ...values) => {
+  console.log( `[main.ts] exit( ${values.join(", ")} )` )
+  process.exit(0);
+  return 0;
+})
+
 //////////////////////////////////////////////////////////////////////////
 
 function createWindow(): BrowserWindow {
@@ -64,6 +73,7 @@ function createWindow(): BrowserWindow {
 
   // Create the browser window.
   win = new BrowserWindow({
+    frame: false,
     x: 0,
     y: 0,
     width: size.width,
@@ -77,7 +87,7 @@ function createWindow(): BrowserWindow {
     },
   });
 
-  
+
 
   if (serve) {
     win.webContents.openDevTools();
@@ -99,6 +109,8 @@ function createWindow(): BrowserWindow {
       protocol: 'file:',
       slashes: true
     }));
+
+    //win.removeMenu();
   }
 
   // Emitted when the window is closed.
@@ -119,7 +131,7 @@ try {
   // Added 400 ms to fix the black background issue while using transparent window. More detais at https://github.com/electron/electron/issues/15947
   app.on('ready', () => {
     setTimeout(createWindow, 400)
-    Menu.setApplicationMenu(menu);
+    //Menu.setApplicationMenu(menu);
   });
 
   /*
@@ -159,7 +171,7 @@ try {
      //process.exit(code);
     }
    });
-  
+
 
   app.on('activate', () => {
     // On OS X it's common to re-create a window in the app when the

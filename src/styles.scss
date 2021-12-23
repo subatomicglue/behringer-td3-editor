@@ -25,6 +25,7 @@ html, body, .container {
   padding: 0;
   overflow-y:hidden;
   user-select: none;
+  font-size: 1.3rem; /* cell height */
 }
 
 /* use viewport-relative units to cover page fully */
@@ -133,6 +134,10 @@ a, a:hover, a:visited {
   color: grey;
   padding: 1em;
   margin: .2em;
+}
+
+.button, .button-disabled {
+  font-size: 1rem;
 }
 
 H1 {
