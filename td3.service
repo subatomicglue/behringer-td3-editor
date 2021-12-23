@@ -1,0 +1,22 @@
+[Unit]
+Description=Behringer TD3 Editor - subatomiclabs
+
+[Service]
+ExecStart=/home/pi/td3/release/linux-armv7l-unpacked/td3programmer
+WorkingDirectory=/home/pi/td3/release/linux-armv7l-unpacked
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+Restart=always
+RestartSec=10s
+KillMode=process
+TimeoutSec=infinity
+StandardOutput=journal+console
+StandardError=journal+console
+User=pi
+StartLimitIntervalSec=0
+StartLimitBurst=100
+RestartSec=1000ms
+RuntimeMaxSec=infinity
+
+[Install]
+WantedBy=graphical.target

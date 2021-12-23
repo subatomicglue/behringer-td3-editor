@@ -75,73 +75,65 @@ apt="sudo DEBIAN_FRONTEND=noninteractive apt -yq --allow-unauthenticated --allow
 
 source "../vstdev/MantisSynth/rpi/common.sh"
 
-#if [ `isInApt "node"` == 0 ]; then
-#fi
-
-#echo ""
-#echo "Removing anything installed before"
-#remoteCmd "$apt remove node npm libasound2 libasound2-dev"
-
-#echo ""
-#echo "Update/Upgrading your Raspberry Pi..."
-#echo " - package lists could be outdated/wrong"
-#remoteCmd "$apt_get update"
-#remoteCmd "$apt_get upgrade"
-
 echo ""
-echo "Installing..."
-remoteCmd "$apt_get install node"
-remoteCmd "$apt_get install npm"
-remoteCmd "$apt_get install libasound2"
-remoteCmd "$apt_get install libasound2-dev"
-
-echo ""
-echo "electron's ruby/fpm sucks on raspberry pi:"
-echo "  avoid 'ruby: cannot execute binary file: Exec format error'"
-echo "install our own ruby and fpm"
-echo "requires:"
-echo "   export USE_SYSTEM_FPM=\"true\""
-echo "before the electron-builder command"
-remoteCmd "$apt_get install ruby-full"
-remoteCmd "sudo gem uninstall fpm; sudo gem install fpm -v 1.10.2"
-
-echo ""
-echo "Installing... node version manager (we pick a past version, because the rpi time can be some days in the past)"
-remoteCmd "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash"
-remoteCmd "source ~/.nvm/nvm.sh; nvm install 14.18.0; nvm use 14.18.0; nvm alias default node"
-if [ "$?" != 0 ]; then
-  echo "something with the nvm install failed"
-  exit -1
+echo "Icon launcher for the app"
+writeText2File '#!/bin/bash
+PID="$(pidof $EXE)"
+if [  "$PID" != ""  ]; then
+  kill $PID
+else
+ DISPLAY=:0.0 "$INSTALL_DIR/release/linux-armv7l-unpacked/$EXE" &
 fi
+' "/usr/bin/toggle-$EXE.sh"
 
-echo ""
-echo "Removing previous app"
-remoteCmd "rm -rf '$INSTALL_DIR'"
+remoteCmd "sudo chmod +x /usr/bin/toggle-$EXE.sh"
 
-echo ""
-echo "Installing app"
-npm run deploy-rpi
-
-echo ""
-echo "Building app"
-remoteCmd "cd '$INSTALL_DIR';  npm install; npm run electron:buildrpi"
-
-./setup_app_icon.sh
-
-echo ""
-echo "Listing Audio Devices:"
-remoteCmd "aplay -l"
-
-echo ""
-echo "Listing MIDI Devices:"
-remoteCmd "amidi -l"
+copyFile2FileAsRoot rpi-icon.png "/usr/share/pixmaps/$EXE-rpi-icon.png"
+writeText2File "[Desktop Entry]
+Name=Toggle $APPNAME
+Comment=Toggle $APPNAME
+Exec=/usr/bin/toggle-$EXE.sh
+Type=Application
+Icon=$EXE-rpi-icon.png
+Categories=Panel;Utility;MB
+X-MB-INPUT-MECHANISM=True
+" "/usr/share/raspi-ui-overrides/applications/toggle-$EXE.desktop"
 
 
-# DISPLAY=:0.0 cd '$INSTALL_DIR/release/linux-armv7l-unpacked' && ./$EXE
+remoteCmd "cp /etc/xdg/lxpanel/LXDE-pi/panels/panel /home/pi/.config/lxpanel/LXDE-pi/panels/panel"
 
+appendText2ToFile "
+Plugin {
+  type=launchbar
+  Config {
+    Button {
+      id=toggle-keyboard.desktop
+    }
+  }
+}
+Plugin {
+  type=launchbar
+  Config {
+    Button {
+      id=toggle-$EXE.desktop
+    }
+  }
+}
+" "/home/pi/.config/lxpanel/LXDE-pi/panels/panel"
 
-#'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-#[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm'
+writeText2File "[Desktop Entry]
+Name=TD3 Editor
+Comment=TD3 Editor
+Icon=/usr/share/pixmaps/$EXE-rpi-icon.png
+Exec=$INSTALL_DIR/release/linux-armv7l-unpacked/$EXE
+Type=Application
+Encoding=UTF-8
+Terminal=false
+" "/home/pi/Desktop/$APPNAME.desktop"
+
+remoteCmd "sudo chmod 755 'Desktop/$APPNAME.desktop'; sudo chown pi 'Desktop/$APPNAME.desktop'; sudo chgrp pi 'Desktop/$APPNAME.desktop'"
+
+remoteCmd "/usr/bin/toggle-$EXE.sh"
 
 # DISPLAY=:0 matchbox-keyboard &
 
@@ -149,5 +141,4 @@ remoteCmd "amidi -l"
 
 #echo "Now, try logging in with:  ssh -p$PORT $USER@$HOST"
 #ssh -p$PORT $USER@$HOST
-
 
