@@ -1,4 +1,4 @@
-# SubatomicTD3ditor - an Editor/Programmer for the Behringer TD3
+# SubatomicTD3ditor - an Editor/Programmer for the Behringer TD3 running on Raspberry Pi
 
 A standalone pattern editor for the Behringer TD3 written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
 
@@ -14,10 +14,11 @@ Running as:
     - Raspberry Pi (8gb) with [official 7" touchscreen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/)  ([Buster 2021-05-07](https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2021-05-28/))
     - ...all tests with USB-midi to the TD-3
 
-# Develop / Run
+# Get the source, Run
 - The development harness auto-detects frontend code changes (`src/*`) and rebuilds automatically.
 - For backend code changes (`app/main.ts`) `ctrl-c` and rerun `npm start`.
 ```
+$ git clone https://github.com/subatomicglue/behringer-td3-editor.git
 $ npm install
 $ npm start
 ```
