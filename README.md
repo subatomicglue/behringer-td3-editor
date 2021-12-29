@@ -52,8 +52,8 @@ Grab a package from the [releases](https://github.com/subatomicglue/behringer-td
 
 # TODO, Future work:
   - rPI needs some polish
-    - UI is a little slow
-    - rPI build/installation is automated, but the scripts are not available here...  yet.  (less important if we can publish pre-built packages for download)
+    - **Performance:**   UI can be a little slow, maybe because weak rPI combined with Angular (we could try SolidJS or vanilla Javascript to get more lean).
+    - **Install Scripts:** rPI build/installation is automated, but the scripts are not available here...  yet.  (less important if we can publish pre-built packages for download)
   - MIDI needs some polish
     - Currently we search for the "TD-3" midi device, if found, use it!   That works for USB MIDI.
     - I'd like to provide a fallback in the UI to select the MIDI device in case using a standard midi cable.
