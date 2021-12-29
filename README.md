@@ -15,8 +15,8 @@ Running as:
     - ...all tests with USB-midi to the TD-3
 
 # Develop / Run
-The development harness auto-detects frontend code changes (`src/*`) and rebuilds automatically.
-For backend code changes (`app/main.ts`) `ctrl-c` and rerun `npm start`.
+- The development harness auto-detects frontend code changes (`src/*`) and rebuilds automatically.
+- For backend code changes (`app/main.ts`) `ctrl-c` and rerun `npm start`.
 ```
 $ npm install
 $ npm start
