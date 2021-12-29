@@ -48,7 +48,7 @@ $  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor
 ```
 
 # Install
-Grab a package from the releases and install it on your OS...
+Grab a package from the [releases](https://github.com/subatomicglue/behringer-td3-editor/releases) and install it on your OS...
 
 # TODO, Future work:
   - rPI needs some polish
