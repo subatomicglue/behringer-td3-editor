@@ -74,6 +74,7 @@ function createWindow(): BrowserWindow {
   // Create the browser window.
   win = new BrowserWindow({
     frame: false,
+    resizable: (process.platform === "win32" || process.platform === "darwin"), // we can resize on win/mac,  but no resize on raspberry pi (which is linux)
     x: 0,
     y: 0,
     width: size.width,
@@ -110,6 +111,10 @@ function createWindow(): BrowserWindow {
       slashes: true
     }));
 
+    // td3.setHandler( (code, value, code_str) => {
+    //   win.webContents.send( 'handler', code_str, value );
+    // })
+
     //win.removeMenu();
   }
 
@@ -132,6 +137,12 @@ try {
   app.on('ready', () => {
     setTimeout(createWindow, 400)
     //Menu.setApplicationMenu(menu);
+
+    let os = require('os');
+    console.log( "Happy Announcement:    HELLO, I Exist!" )
+    console.log( "OS Type:", os.type() ); // "Windows_NT"
+    console.log( "OS Release:", os.release() ); // "10.0.14393"
+    console.log( "OS Platform:", os.platform() ); // "win32"
   });
 
   /*

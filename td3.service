@@ -2,7 +2,7 @@
 Description=Behringer TD3 Editor - subatomiclabs
 
 [Service]
-ExecStart=/home/pi/td3/release/linux-armv7l-unpacked/td3programmer
+ExecStart=/home/pi/td3/release/linux-armv7l-unpacked/subatomictd3ditor
 WorkingDirectory=/home/pi/td3/release/linux-armv7l-unpacked
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/pi/.Xauthority

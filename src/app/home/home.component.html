@@ -1,26 +1,26 @@
 
-<div class="container" *ngIf="!pattern">
+<div class="page-container" *ngIf="!pattern">
   LOADING PATTERN...
 </div>
 
-<div class="container" (window:keypress)="onKeyDown( $event )" *ngIf="pattern">
-  <div class="header">
+<div class="page-container" (window:keypress)="onKeyDown( $event )" *ngIf="pattern">
+  <div class="page-header">
     <!--
     <h1><a routerLink="/detail">&lt;-- </a> Behringer TD-3 editor/programmer ({{ name }} {{ model }} ver {{ version }})</h1>
     -->
     <table class="seq">
-      <tr class="row">
-        <td class="cell-rowname">&nbsp;&nbsp;</td>
-        <td [ngClass]="{'cell': lastStep != step, 'cell-sel':  lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step" (mousedown)="selectColumn($event, step)">&nbsp;&nbsp;</td>
+      <tr class="seq-row">
+        <td class="seq-cell-rowname">&nbsp;&nbsp;</td>
+        <td [ngClass]="{'seq-cell': lastStep != step, 'seq-cell-sel':  lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step" (mousedown)="selectColumn($event, step)">&nbsp;&nbsp;</td>
       </tr>
     </table>
   </div>
 
-  <div class="content">
+  <div class="page-content">
     <table class="seq">
-      <tr class="row" *ngFor="let row_pitch of rows.slice().reverse()">
-        <td [ngClass]="{'cell-rowname':true, 'pianowhite': pianowhite[row_pitch % pianowhite.length]}"><span *ngIf="row_pitch % 12 == 0">{{pianonotes[row_pitch % 12]}}{{mathRef.floor( row_pitch/12 )}}</span></td>
-        <td [ngClass]="{'cell': !(lastPitch == row_pitch && lastStep == step), 'cell-sel':  lastPitch == row_pitch && lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step">
+      <tr class="seq-row" *ngFor="let row_pitch of rows.slice().reverse()">
+        <td [ngClass]="{'seq-cell-rowname':true, 'pianowhite': pianowhite[row_pitch % pianowhite.length]}"><span *ngIf="row_pitch % 12 == 0">{{pianonotes[row_pitch % 12]}}{{mathRef.floor( row_pitch/12 )}}</span></td>
+        <td [ngClass]="{'seq-cell': !(lastPitch == row_pitch && lastStep == step), 'seq-cell-sel':  lastPitch == row_pitch && lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step">
             <span [ngClass]="{ 'note-off': !(pitch == row_pitch && pattern.rests[step] == 0), 'note-on': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.accents[step] == 0), 'note-on-accent': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.accents[step] == 1) }" (mousedown)="setPitch($event, step, row_pitch, 0)"></span><span [ngClass]="{ 'note-off': !(pitch == row_pitch && pattern.rests[step] == 0) || (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 0), 'note-on': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 1 && pattern.accents[step] == 0), 'note-on-accent': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 1 && pattern.accents[step] == 1) }" (mousedown)="setPitch($event, step, row_pitch, 1)"></span>
           <!-- {{ pattern.rests[step] == 1 ? '&nbsp;&nbsp;' : (pitch == row_pitch ? ((pattern.accents[step] == 1 ? "a" : "-") + (pattern.slides[step] == 1 ? "s" : "-")) : '&nbsp;&nbsp;' )}} -->
         </td>
@@ -28,34 +28,36 @@
     </table>
   </div>
 
-  <div (click)="selectColumn($event, -1)" class="footer">
-    <div>
-      <div class="button" (click)="onGroupButton($event)">Group {{(["I","II","III","IV"])[pattern.group]}}</div>
-      <div class="button" (click)="setSection(0)">A1</div>
-      <div class="button" (click)="setSection(1)">A2</div>
-      <div class="button" (click)="setSection(2)">A3</div>
-      <div class="button" (click)="setSection(3)">A4</div>
-      <div class="button" (click)="setSection(4)">A5</div>
-      <div class="button" (click)="setSection(5)">A6</div>
-      <div class="button" (click)="setSection(6)">A7</div>
-      <div class="button" (click)="setSection(7)">A8</div>
-      <div class="button" (click)="setSection(8)">B1</div>
-      <div class="button" (click)="setSection(9)">B2</div>
-      <div class="button" (click)="setSection(10)">B3</div>
-      <div class="button" (click)="setSection(11)">B4</div>
-      <div class="button" (click)="setSection(12)">B5</div>
-      <div class="button" (click)="setSection(13)">B6</div>
-      <div class="button" (click)="setSection(14)">B7</div>
-      <div class="button" (click)="setSection(15)">B8</div>
-    </div>
-    <div>
-      <div [ngClass]="{'button': !isPlaying, 'button-disabled':  isPlaying}" (click)="start()">start</div>
-      <div [ngClass]="{'button': isPlaying, 'button-disabled':  !isPlaying}" (click)="stop()">stop</div>
-      <div class="button" (click)="onBpmButton($event)">{{ bpm }} bpm</div>
-      <div class="button" (click)="onStepsButton($event)">steps {{pattern.step_count}}</div>
-      <div [ngClass]="{'button': lastPitch != -1 && lastStep != -1, 'button-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</div>
-      <div class="button" (click)="exit()" style="float:right">pwr</div>
-    </div>
+  <!-- (click)="selectColumn($event, -1)"  -->
+  <div class="page-footer">
+    <table class="TableButtonTable">
+      <tr class="TableButtonRow">
+        <td class="TableButton" style="width: 4rem" (click)="onGroupButton($event)">Group {{(["I","II","III","IV"])[pattern.group]}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 0, 'TableButton-highlight':  (pattern.section%8) == 0}" (click)="setSection(0 + AB*8)">{{AB?"B":"A"}}1</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 1, 'TableButton-highlight':  (pattern.section%8) == 1}" (click)="setSection(1 + AB*8)">{{AB?"B":"A"}}2</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 2, 'TableButton-highlight':  (pattern.section%8) == 2}" (click)="setSection(2 + AB*8)">{{AB?"B":"A"}}3</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 3, 'TableButton-highlight':  (pattern.section%8) == 3}" (click)="setSection(3 + AB*8)">{{AB?"B":"A"}}4</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 4, 'TableButton-highlight':  (pattern.section%8) == 4}" (click)="setSection(4 + AB*8)">{{AB?"B":"A"}}5</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 5, 'TableButton-highlight':  (pattern.section%8) == 5}" (click)="setSection(5 + AB*8)">{{AB?"B":"A"}}6</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 6, 'TableButton-highlight':  (pattern.section%8) == 6}" (click)="setSection(6 + AB*8)">{{AB?"B":"A"}}7</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 7, 'TableButton-highlight':  (pattern.section%8) == 7}" (click)="setSection(7 + AB*8)">{{AB?"B":"A"}}8</td>
+        <td class="TableButton" (click)="toggleAB()">Sec.{{AB ? "B" : "A"}}</td>
+      </tr>
+    </table>
+    <table class="TableButtonTable">
+      <tr class="TableButtonRow">
+        <td class="TableButton" (click)="isPlaying ? stop() : start()"><span class="material-icons">{{isPlaying ? "stop" : "play_arrow"}}</span></td>
+        <td class="TableButton" (click)="onBpmButton($event)">{{ bpm }} bpm</td>
+        <td class="TableButton" (click)="onClockSrc()">Clock {{clock_src_lookup[clock_src][1]}}</td>
+        <td class="TableButton" (click)="onClockTriggerRate()" *ngIf="clock_src == 3">{{clock_src == 3 ? clock_trigger_rate_lookup[clock_trigger_rate][1] : "---"}}</td>
+        <!-- <td class="TableButton" (click)="onKeyPriority()">{{key_priority_lookup[key_priority][1]}}</td> -->
+        <td class="TableButton" (click)="onStepsButton($event)">{{pattern.step_count}} Steps</td>
+        <td [ngClass]="{'TableButton': lastPitch != -1 && lastStep != -1, 'TableButton-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</td>
+        <td class="TableButton" (click)="clear()">Clear</td>
+        <td class="TableButton" (click)="random()">Rand</td>
+        <td class="TableButton" (click)="exit()"><span class="material-icons">power_settings_new</span></td>
+      </tr>
+    </table>
 
     <!-- midi port selector -->
     <!--

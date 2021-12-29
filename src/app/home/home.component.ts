@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ElectronService } from '../core/services/electron/electron.service';
 import * as td3 from '../../../app/td3';
 import * as stepseq from '../../../app/stepseq';
+import { getConfigFileParsingDiagnostics } from 'typescript/lib/tsserverlibrary';
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -31,9 +32,29 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   pianonotes = [' C', 'C#', ' D', 'D#', ' E', ' F', 'F#', ' G', 'G#', ' A', 'A#', ' B' ]
   stringRef = String;
   mathRef = Math;
+  minNote = 0x0c;
+  maxNote = 0x31;
+  AB=0;
+
+  key_priority_lookup = [ [0x00, "Low"], [0x01, "Hi"], [0x02, "Last"] ];
+  clock_trigger_rate_lookup = [ [0x00, "1 PPS"], [0x01, "2 PPQ"], [0x02, "24 PPQ"], [0x08, "48 PPQ"] ];
+  clock_src_lookup = [ [0x00, "Int"], [0x01, "MID"], [0x02, "USB"], [0x03, "Trg"] ];
+
+  // config:
+  midi_out_channel = 0;       // int  0-15
+  midi_in_channel = 0;        // int  0-15
+  midi_transpose = 0;         // int  [-12 <0x00> to 0 <0x0C> to +12 <0x18>]
+  pitch_bend_semitones = 0;   // int  0-12
+  key_priority = 0;           // enum 0x00 - Low, 0x01 - High, 0x02 - Last
+  multi_trigger_mode = 0;     // bool 0-1
+  clock_trigger_polarity = 0  // enum 0x00 - Fall, 0x01 - Rise
+  clock_trigger_rate = 0;     // enum 0x00 - 1 PPS, 0x01 - 2 PPQ, 0x02 - 24 PPQ, 0x08 - 48 PPQ
+  clock_src = 0;              // enum 0x00 - Internal, 0x01 - MIDI DIN, 0x02 - MIDI USB, 0x03 - Trigger
+  accent_vel_threshold = 0;   // int  0 to 127
+
 
   constructor(private router: Router, private electronService: ElectronService, private zone:NgZone) {
-    for (let x = 0x0c; x < 0x31; ++x) {
+    for (let x = this.minNote; x < this.maxNote; ++x) {
       this.rows.push( x )
     }
     for (let x = 0; x <= 16; ++x) {
@@ -65,7 +86,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       this.name = "Behringer " + await td3.send( td3.Send.GET_PRODUCT_NAME() );
       this.model = await td3.send( td3.Send.GET_MODEL_CODE() );
       this.version = await td3.send( td3.Send.GET_FIRMWARE_VERSION() );
-      await td3.send( td3.Send.GET_CONFIGURATION() );
+      await this.getConfig();
       this.seq = td3;
     } else {
       this.name = "Web";
@@ -111,6 +132,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       stepseq.seqStart();
     }
     this.isPlaying = true;
+    this.getConfig();
   }
   async stop() {
     if (await td3.isOpen()) {
@@ -119,6 +141,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       stepseq.seqStop();
     }
     this.isPlaying = false;
+    this.getConfig();
   }
   async setBpm( val ) {
     if (await td3.isOpen()) {
@@ -133,10 +156,25 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     if (await td3.isOpen()) {
       //console.log( "before get pattern: " , this.pattern )
       this.pattern = await td3.send( td3.Send.GET_PATTERN( this.pattern.group, this.pattern.section ) )
+      this.AB = this.pattern.section < 8 ? 0 : 1;
       //console.log( "after get pattern: " , this.pattern )
+      await this.getConfig();
+    }
+  }
+  async getConfig() {
+    if (await td3.isOpen()) {
+      let config = await td3.send( td3.Send.GET_CONFIGURATION() );
+      for (let c of Object.keys( config )) {
+        if (c == "clock_trigger_rate") {
+          this.clock_trigger_rate = config.clock_trigger_rate != 0x08 ? config.clock_trigger_rate : 0x03;
+        } else {
+          this[c] = config[c];
+        }
+      }
     }
   }
 
+  // debug.... toggle something.
   barf = true;
   async tog() {
     this.pattern = await td3.send( td3.Send.GET_PATTERN( this.pattern.group, this.pattern.section ) )
@@ -244,6 +282,10 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     return [w,h]
   }
 
+  // onButton2Side( e, func1, func2 ) {
+  //   return this.event2xy(e)[0] < (this.event2wh(e)[0]/2) ? func1() : func2();
+  // }
+
   // tap on the left of the button to dec, right of the button to inc.
   onStepsButton(e){
     this.event2xy(e)[0] < (this.event2wh(e)[0]/2) ?
@@ -277,5 +319,59 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   async setGroup( g ) {
     this.pattern.group = g;
     await this.getPattern();
+  }
+
+  clear() {
+    for (let x = 0; x < this.pattern.rests.length; ++x) {
+      this.pattern.rests[x] = 1;
+    }
+    for (let x = 0; x < this.pattern.pitches.length; ++x) {
+      this.pattern.pitches[x] = 0x18;
+    }
+    this.lastStep = -1;
+    this.lastPitch = -1;
+
+    this.onPatternChanged();
+  }
+  random() {
+    for (let x = 0; x < this.pattern.rests.length; ++x) {
+      this.pattern.rests[x] = Math.floor(Math.random() + 0.5); // between 0..1  +  0.5
+    }
+    for (let x = 0; x < this.pattern.pitches.length; ++x) {
+      this.pattern.pitches[x] = Math.floor( (Math.random() * this.maxNote) + this.minNote );
+    }
+    for (let x = 0; x < this.pattern.accents.length; ++x) {
+      this.pattern.accents[x] = Math.floor(Math.random() + 0.25); // between 0..1  +  0.25
+    }
+    for (let x = 0; x < this.pattern.pitches.length; ++x) {
+      this.pattern.slides[x] = Math.floor(Math.random() + 0.50); // between 0..1  +  0.5
+    }
+    this.lastStep = -1;
+    this.lastPitch = -1;
+
+    this.onPatternChanged();
+  }
+
+  async onClockTriggerRate() {
+    // 0x00 - 1 PPS, 0x01 - 2 PPQ, 0x02 - 24 PPQ, 0x08 - 48 PPQ (only valid when clock src is TRIGGER)
+    this.clock_trigger_rate = (this.clock_trigger_rate + 1) % 4;
+    await td3.send( td3.Send.SET_CLOCK_TRIGGER_RATE( this.clock_trigger_rate_lookup[this.clock_trigger_rate][0] ) );
+  }
+
+  async onClockSrc() {
+    // enum 0x00 - Internal, 0x01 - MIDI DIN, 0x02 - MIDI USB, 0x03 - Trigger
+    this.clock_src = (this.clock_src + 1) % 4;
+    await td3.send( td3.Send.SET_CLOCK_SRC( this.clock_src_lookup[this.clock_src][0] ) );
+  }
+
+  async onKeyPriority() {
+    // enum 0x00 - Low, 0x01 - High, 0x02 - Last
+    this.key_priority = (this.key_priority + 1) % 3;
+    await td3.send( td3.Send.SET_KEYPRIORITY( this.key_priority_lookup[this.key_priority][0] ) );
+  }
+
+  async toggleAB() {
+    this.AB = this.AB == 0 ? 1 : 0;
+    await this.setSection( (this.pattern.section % 8) + this.AB * 8 );
   }
 }

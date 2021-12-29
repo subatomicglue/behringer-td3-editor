@@ -233,8 +233,9 @@ const Send = {
                                                                           Bitmask, with only least significant nibble used.  Layout is like this:
                                                                             xxxx7654 xxxx3210 xxxxFEDC xxxxBA98
                                                                         */
-  GET_CONFIGURATION: () => sysex_td3( [0x75] ),     // returns bytes 7   (0x76),
+  GET_CONFIGURATION: () => sysex_td3( [0x75] ),     // returns
                                                     /*
+                                                    0x07: Config Command (0x76)
                                                     0x08: MIDI Out Channel [0x00-0x0F]
                                                     0x09: MIDI In Channel [0x00-0x0F]
                                                     0x0A: MIDI Transpose [-12 <0x00> to 0 <0x0C> to +12 <0x18>]
@@ -625,7 +626,7 @@ function bpmToMs( bpm, steps_per_beat = 16 ) {
   return msec_per_step
 }
 
-let bpm = 180;
+let bpm = 125;
 let start_seq = false;
 let interval = false;
 let debug_bpm_msg = 0;
@@ -656,9 +657,11 @@ function setBpm( b ) {
   interval = setInterval(function() {
     if (start_seq) {
       if (debug_bpm_msg++ % 1000 == 0) console.log( "[td3] ...sending many clocks... interval timer ms=", bpmToMs( bpm ))
-      sendNoSync([0xF8]);
+      sendNoSync([0xF8]); // send a clock tick
     }
-  }, bpmToMs( bpm ) );
+  }, bpmToMs( bpm ) * 0.6 ); // scale by 0.6 is needed to match the tempo on actual td3... 0.6???   why????
+                             // bpmToMs math works out, so why.
+                             // javascript interval timer that inaccurate?  it's totally possible.  it's not a RT system.....
   return true
 }
 
@@ -673,7 +676,9 @@ function seqStart( clock_src = -1 /* 0 int 1 din 2 usb */ ) {
   console.log( `[td3] starting sequencer` )
   if (0 <= clock_src) sendNoSync(Send.SET_CLOCK_SRC( clock_src ));
   if (!start_seq) {
+    sendNoSync([0xFA]); // MIDI SEQ Start (td3 respnds to 0xFB, but other seqs on the chain may need a start msg, so send it!)
     sendNoSync([0xFB]); // TD-3  seq start (requires USB clock, and timing pulse)
+    sendNoSync([0xF8]); // send a clock tick
   }
   start_seq = true;
   setBpm( bpm );
@@ -853,7 +858,9 @@ function useElectronBrowser( ipcRenderer ) {
       }).
 
       And on the NodeJS side, use:
-      win.webContents.send( 'handler', code_str, value );
+      td3.setHandler( (code, value, code_str) => {
+        win.webContents.send( 'handler', code_str, value );
+      })
     `);
   };
 }
