@@ -52,12 +52,14 @@ $  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor
 Grab a package from the [releases](https://github.com/subatomicglue/behringer-td3-editor/releases) and install it on your OS...
 
 # TODO, Future work:
+  - UNDO/REDO
+  - SAVE/LOAD patterns to disk
   - rPI needs some polish
     - **Performance:**   UI can be a little slow, maybe because weak rPI combined with Angular (we could try SolidJS or vanilla Javascript to get more lean).
     - **Install Scripts:** rPI build/installation is automated, but the scripts are not available here...  yet.  (less important if we can publish pre-built packages for download)
   - MIDI needs some polish
-    - Currently we search for the "TD-3" midi device, if found, use it!   That works for USB MIDI.
-    - I'd like to provide a fallback in the UI to select the MIDI device in case using a standard midi cable.
+    - Currently we search for the "TD-3" midi device, if found, use it!   That works for USB MIDI.  It's a little hard coded.
+    - I'd like to provide an option in the UI to select the MIDI device in case using a standard midi cable.
   - MIDI interface is on the nodejs side, using the RtMIDI c++ libs, it could be interesting to also provide a Web MIDI implementation as well for a completely browser based solution, avoid all the RPC calls from the Electron Renderer to Node side..
     - Having midi on nodejs side might be more performant for the sequencer timing, since it operates in a separate thread from the renderer, no competition might be better - considering javascript's single thread model.
   - Longer patterns than 16 steps...
