@@ -32,7 +32,7 @@
   <div class="page-footer">
     <table class="TableButtonTable">
       <tr class="TableButtonRow">
-        <td class="TableButton" style="width: 4rem" (click)="onGroupButton($event)">Group {{(["I","II","III","IV"])[pattern.group]}}</td>
+        <td class="TableButton-highlight" style="width: 4rem" (click)="onGroupButton($event)">Group {{(["I","II","III","IV"])[pattern.group]}}</td>
         <td [ngClass]="{'TableButton': (pattern.section%8) != 0, 'TableButton-highlight':  (pattern.section%8) == 0}" (click)="setSection(0 + AB*8)">{{AB?"B":"A"}}1</td>
         <td [ngClass]="{'TableButton': (pattern.section%8) != 1, 'TableButton-highlight':  (pattern.section%8) == 1}" (click)="setSection(1 + AB*8)">{{AB?"B":"A"}}2</td>
         <td [ngClass]="{'TableButton': (pattern.section%8) != 2, 'TableButton-highlight':  (pattern.section%8) == 2}" (click)="setSection(2 + AB*8)">{{AB?"B":"A"}}3</td>
@@ -55,6 +55,8 @@
         <td [ngClass]="{'TableButton': lastPitch != -1 && lastStep != -1, 'TableButton-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</td>
         <td class="TableButton" (click)="clear()">Clear</td>
         <td class="TableButton" (click)="random()">Rand</td>
+        <td [ngClass]="{'TableButton': canUndo(), 'TableButton-disabled': !canUndo() }" (click)="undo()">Undo</td>
+        <td [ngClass]="{'TableButton': canRedo(), 'TableButton-disabled': !canRedo() }" (click)="redo()">Redo</td>
         <td class="TableButton" (click)="exit()"><span class="material-icons">power_settings_new</span></td>
       </tr>
     </table>

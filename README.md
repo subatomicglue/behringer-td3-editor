@@ -52,7 +52,6 @@ $  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor
 Grab a package from the [releases](https://github.com/subatomicglue/behringer-td3-editor/releases) and install it on your OS...
 
 # TODO, Future work:
-  - UNDO/REDO
   - SAVE/LOAD patterns to disk
   - rPI needs some polish
     - **Performance:**   UI can be a little slow, maybe because weak rPI combined with Angular (we could try SolidJS or vanilla Javascript to get more lean).

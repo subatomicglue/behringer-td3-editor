@@ -79,6 +79,8 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     //await td3.open( e );
   }
   async init() {
+    this.pattern.group = this.getLocalStorage( "group", 0 )
+    this.pattern.section = this.getLocalStorage( "section", 0 )
     await td3.close();
     await td3.open();
     this.ports = await td3.getPorts();
@@ -111,14 +113,18 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   async stepCountChange(e) {
     await this.setStepCount( parseInt( e.target.value ) );
   }
-  async onPatternChanged() {
-    //console.log( this.pattern );
-    //console.log( "are these undefined??", this.pattern.group, this.pattern.section, this.pattern.step_count );
-    this.pattern.ties = this.pattern.ties.map( r => 1 )
+  async sendPattern() {
+    this.pattern.ties = this.pattern.ties.map( r => 1 ) // we dont edit ties, just clear them
     if (await td3.isOpen()) {
       await td3.send( td3.Send.SET_PATTERN( this.pattern ) );
-      await this.getPattern();
     }
+    //console.log( JSON.stringify( this.pattern ) );
+  }
+  async onPatternChanged( log_undo = true ) {
+    if (log_undo)
+      await this.addUndoData( { pattern: this.pattern } );
+    await this.sendPattern()
+    await this.getPattern(); // always read it back so we are displaying what's on the device (in case it fails, or whatever)
     //console.log( JSON.stringify( this.pattern ) );
   }
   out() {
@@ -157,6 +163,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       //console.log( "before get pattern: " , this.pattern )
       this.pattern = await td3.send( td3.Send.GET_PATTERN( this.pattern.group, this.pattern.section ) )
       this.AB = this.pattern.section < 8 ? 0 : 1;
+      this.loadUndo();
       //console.log( "after get pattern: " , this.pattern )
       await this.getConfig();
     }
@@ -257,12 +264,6 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     }
   }
 
-  @HostListener('document:keydown.control.z')
-  @HostListener('document:keydown.meta.z')
-  undo(event: KeyboardEvent) {
-    console.log( "undo!" )
-  }
-
   @HostListener('document:keydown.esc')
   @HostListener('document:keydown.q')
   async exit() {
@@ -313,11 +314,14 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
 
   async setSection( s ) {
     this.pattern.section = s;
+    this.setLocalStorage( "section", this.pattern.section )
+    this.clearUndo();
     await this.getPattern();
   }
 
   async setGroup( g ) {
     this.pattern.group = g;
+    this.setLocalStorage( "group", this.pattern.group )
     await this.getPattern();
   }
 
@@ -373,5 +377,91 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   async toggleAB() {
     this.AB = this.AB == 0 ? 1 : 0;
     await this.setSection( (this.pattern.section % 8) + this.AB * 8 );
+  }
+
+  // return false if storage was full, or true on success
+  setLocalStorage(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+      return true;
+    } catch (e) {
+      /// quota probably exceeded:
+      ///  Chrome has DOMException.QUOTA_EXCEEDED_ERR which is 22, firefox has code == 1014
+      ///  e.code === "22" || e.code === "1014"
+      ///  e.name == "QuotaExceededError" || e.name == "NS_ERROR_DOM_QUOTA_REACHED" || e.name == "QUOTA_EXCEEDED_ERR"
+      /// inconsistent across browsers, so... just catch any error
+      return false;
+    }
+  }
+
+  getLocalStorage(key, default_value = undefined) {
+    let value = localStorage.getItem(key);
+    return value ? JSON.parse( value ) : default_value;
+  }
+
+  delLocalStorage(key) {
+    localStorage.removeItem(key)
+  }
+
+  undodata:any;
+  clearUndo() {
+    this.undodata = { position: 0, history: [] };
+    this.saveUndo();
+    this.loadUndo();
+  }
+  loadUndo() {
+    this.undodata = this.getLocalStorage( `undo` );
+    if (this.undodata == undefined) {
+      this.clearUndo();
+    }
+  }
+  saveUndo() {
+    this.setLocalStorage( `undo`, this.undodata );
+  }
+
+  @HostListener('document:keydown.control.z')
+  @HostListener('document:keydown.meta.z')
+  undo(event: KeyboardEvent) {
+    if (this.canUndo()) {
+      this.undodata.position = Math.max( 0, this.undodata.position - 1 );
+      console.log( `undo!  level ${this.undodata.position}` )
+      this.saveUndo();
+
+      // pattern at this undo level
+      let data = JSON.parse( JSON.stringify( this.undodata.history[this.undodata.position] ) ); // simple deep clone
+      this.pattern = data.pattern;
+      this.onPatternChanged( false );
+    }
+  }
+  @HostListener('document:keydown.control.shift.z')
+  @HostListener('document:keydown.meta.shift.z')
+  redo(event: KeyboardEvent) {
+    if (this.canRedo()) {
+      this.undodata.position = Math.min( this.undodata.history.length == 0 ? 0 : this.undodata.history.length-1, this.undodata.position + 1 );
+      console.log( `redo!  level ${this.undodata.position}` )
+      this.saveUndo();
+
+      // pattern at this undo level
+      let data = JSON.parse( JSON.stringify( this.undodata.history[this.undodata.position] ) ); // simple deep clone
+      this.pattern = data.pattern;
+      this.onPatternChanged( false );
+    }
+  }
+
+  canUndo() {
+    return this.undodata && 0 < this.undodata.history.length && 0 < this.undodata.position;
+  }
+  canRedo() {
+    return this.undodata && this.undodata.position < (this.undodata.history.length - 1);
+  }
+
+  addUndoData( data ) {
+    // adding undo data
+    console.log( "undodata", this.undodata )
+    console.log( "history", this.undodata.history )
+    this.undodata.history = 0 < this.undodata.history.length ? this.undodata.history.slice( 0, this.undodata.position+1 ) : this.undodata.history;
+    this.undodata.position++;
+    this.undodata.history.push( JSON.parse(JSON.stringify(data)) ); // simple deep clone
+    this.saveUndo();
   }
 }
