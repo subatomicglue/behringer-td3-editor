@@ -4,7 +4,7 @@
   "description": "Behringer TD-3 intuitive pattern editor for desktop & small touchscreens on dedicated hardware. The TD3 has a very difficult Ux for editing patterns, no thanks to the Roland TB303 designed in the 80's, iconic, but immesely obtuse to edit.  Behringer nailed THAT design 100%.  So here is an intuitive and visual editor to make editing patterns easy!  Enjoy!",
   "URL": "https://www.subatomiclabs.com/",
   "email": "kevinNOSPAMMMMREMOVETHIS@subatomicglue.com",
-  "version": "10.1.1",
+  "version": "10.1.2",
   "main": "main.js",
   "private": true,
   "dependencies": {

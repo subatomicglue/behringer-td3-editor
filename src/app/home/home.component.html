@@ -47,16 +47,17 @@
     <table class="TableButtonTable">
       <tr class="TableButtonRow">
         <td class="TableButton" (click)="isPlaying ? stop() : start()"><span class="material-icons">{{isPlaying ? "stop" : "play_arrow"}}</span></td>
-        <td class="TableButton" (click)="onBpmButton($event)">{{ bpm }} bpm</td>
-        <td class="TableButton" (click)="onClockSrc()">Clock {{clock_src_lookup[clock_src][1]}}</td>
+        <td class="TableButton" (click)="onBpmButton($event)">{{ bpm }}bpm</td>
+        <td class="TableButton" (click)="onClockSrc()">Clk{{clock_src_lookup[clock_src][1]}}</td>
         <td class="TableButton" (click)="onClockTriggerRate()" *ngIf="clock_src == 3">{{clock_src == 3 ? clock_trigger_rate_lookup[clock_trigger_rate][1] : "---"}}</td>
         <!-- <td class="TableButton" (click)="onKeyPriority()">{{key_priority_lookup[key_priority][1]}}</td> -->
-        <td class="TableButton" (click)="onStepsButton($event)">{{pattern.step_count}} Steps</td>
+        <td class="TableButton" (click)="onStepsButton($event)">{{pattern.step_count}}Steps</td>
         <td [ngClass]="{'TableButton': lastPitch != -1 && lastStep != -1, 'TableButton-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</td>
         <td class="TableButton" (click)="clear()">Clear</td>
         <td class="TableButton" (click)="random()">Rand</td>
-        <td [ngClass]="{'TableButton': canUndo(), 'TableButton-disabled': !canUndo() }" (click)="undo()">Undo</td>
-        <td [ngClass]="{'TableButton': canRedo(), 'TableButton-disabled': !canRedo() }" (click)="redo()">Redo</td>
+        <td [ngClass]="{'TableButton': canUndo(), 'TableButton-disabled': !canUndo() }" (click)="undo()"><span class="material-icons">undo</span></td>
+        <td [ngClass]="{'TableButton': canRedo(), 'TableButton-disabled': !canRedo() }" (click)="redo()"><span class="material-icons">redo</span></td>
+        <!-- <td [ngClass]="{'TableButton': canUndo() || canRedo(), 'TableButton-disabled': !(canUndo() || canRedo()) }" (click)="clearUndo()">clear</td> -->
         <td class="TableButton" (click)="exit()"><span class="material-icons">power_settings_new</span></td>
       </tr>
     </table>

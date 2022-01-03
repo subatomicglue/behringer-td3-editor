@@ -17,6 +17,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   name: string = "1234";
   model: string = "1234";
   version: string = "1234";
+  //pattern: any = {"group":0,"section":0,"pitches":[36,24,36,24,36,39,47,24,36,24,36,24,39,24,37,48],"accents":[0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0],"slides":[0,0,0,0,1,1,0,0,0,0,1,0,1,0,1,0],"triplet_mode":0,"step_count":16,"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0]};
   pattern: any = {"group":0,"section":0,"pitches":[12,15,19,24,19,15,12,15,19,24,27,31,36,31,27,24],"accents":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"slides":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"triplet_mode":0,"step_count":16,"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
   bpm: number = -1;
   rows: any = [];
@@ -98,6 +99,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     }
 
     await this.getPattern();
+    await this.addUndoData( { pattern: this.pattern } );
     this.bpm = await this.seq.getBpm();
   }
   reconnect() {
@@ -121,10 +123,10 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     //console.log( JSON.stringify( this.pattern ) );
   }
   async onPatternChanged( log_undo = true ) {
-    if (log_undo)
-      await this.addUndoData( { pattern: this.pattern } );
     await this.sendPattern()
     await this.getPattern(); // always read it back so we are displaying what's on the device (in case it fails, or whatever)
+    if (log_undo)
+      await this.addUndoData( { pattern: this.pattern } );
     //console.log( JSON.stringify( this.pattern ) );
   }
   out() {
@@ -313,16 +315,21 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   }
 
   async setSection( s ) {
+    this.reduceUndo(); // clear/reduce the undo history since we're navigating away from this group/section
+
     this.pattern.section = s;
     this.setLocalStorage( "section", this.pattern.section )
-    this.clearUndo();
     await this.getPattern();
+    await this.addUndoData( { pattern: this.pattern } );
   }
 
   async setGroup( g ) {
+    this.reduceUndo(); // clear/reduce the undo history since we're navigating away from this group/section
+
     this.pattern.group = g;
     this.setLocalStorage( "group", this.pattern.group )
     await this.getPattern();
+    await this.addUndoData( { pattern: this.pattern } );
   }
 
   clear() {
@@ -409,22 +416,37 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     this.saveUndo();
     this.loadUndo();
   }
+  reduceUndo() {
+    const expire_count = 25;
+    if (expire_count < this.undodata.history.length) {
+      // throw out any redo
+      this.undodata.history = 0 < this.undodata.history.length ? this.undodata.history.slice( 0, this.undodata.position+1 ) : this.undodata.history;
+    }
+    if (expire_count < this.undodata.history.length) {
+      // throw out really old undo...
+      this.undodata.history = 0 < this.undodata.history.length ? this.undodata.history.slice( this.undodata.history.length - expire_count, this.undodata.history.length ) : this.undodata.history;
+    }
+
+    this.saveUndo();
+    this.loadUndo();
+  }
   loadUndo() {
-    this.undodata = this.getLocalStorage( `undo` );
+    this.undodata = this.getLocalStorage( `undo ${this.pattern.group} ${this.pattern.section}` );
     if (this.undodata == undefined) {
       this.clearUndo();
     }
   }
   saveUndo() {
-    this.setLocalStorage( `undo`, this.undodata );
+    this.setLocalStorage( `undo ${this.pattern.group} ${this.pattern.section}`, this.undodata );
   }
 
   @HostListener('document:keydown.control.z')
   @HostListener('document:keydown.meta.z')
-  undo(event: KeyboardEvent) {
+  undo(/*event: KeyboardEvent*/) {
     if (this.canUndo()) {
+      // decrement the position
       this.undodata.position = Math.max( 0, this.undodata.position - 1 );
-      console.log( `undo!  level ${this.undodata.position}` )
+      console.log( `undo!  level ${this.undodata.position}`, this.undodata )
       this.saveUndo();
 
       // pattern at this undo level
@@ -435,10 +457,11 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   }
   @HostListener('document:keydown.control.shift.z')
   @HostListener('document:keydown.meta.shift.z')
-  redo(event: KeyboardEvent) {
+  redo(/*event: KeyboardEvent*/) {
     if (this.canRedo()) {
-      this.undodata.position = Math.min( this.undodata.history.length == 0 ? 0 : this.undodata.history.length-1, this.undodata.position + 1 );
-      console.log( `redo!  level ${this.undodata.position}` )
+      // increment the position
+      this.undodata.position = Math.min( this.undodata.history.length - 1, this.undodata.position + 1 );
+      console.log( `redo!  level ${this.undodata.position}`, this.undodata )
       this.saveUndo();
 
       // pattern at this undo level
@@ -459,9 +482,15 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     // adding undo data
     console.log( "undodata", this.undodata )
     console.log( "history", this.undodata.history )
-    this.undodata.history = 0 < this.undodata.history.length ? this.undodata.history.slice( 0, this.undodata.position+1 ) : this.undodata.history;
-    this.undodata.position++;
-    this.undodata.history.push( JSON.parse(JSON.stringify(data)) ); // simple deep clone
-    this.saveUndo();
+    if (JSON.stringify(data) != JSON.stringify( this.undodata.history[this.undodata.position] )) {
+      this.undodata.history = 0 < this.undodata.history.length ? this.undodata.history.slice( 0, this.undodata.position+1 ) : this.undodata.history;
+
+      this.undodata.history.push( JSON.parse(JSON.stringify(data)) ); // simple deep clone
+      this.undodata.position = this.undodata.history.length - 1;
+      this.saveUndo();
+      console.log( `history!  level ${this.undodata.position}` )
+    } else {
+      console.log( `history!  level ${this.undodata.position} (skipped, already present)` )
+    }
   }
 }
