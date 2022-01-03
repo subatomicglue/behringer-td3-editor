@@ -16,7 +16,7 @@ A standalone pattern editor for the Behringer TD3.
 # Install
 Grab a package from the [releases](https://github.com/subatomicglue/behringer-td3-editor/releases) and install it on your OS...
 
-# Developers: Get the source, Run
+# Source
 - The development harness auto-detects frontend code changes (`src/*`) and rebuilds automatically.
 - For backend code changes (`app/main.ts`) `ctrl-c` and rerun `npm start`.
 ```
@@ -25,7 +25,7 @@ $ npm install
 $ npm start
 ```
 
-# Developers: Build Installer Packages
+# Installer Packages
 ### MacOS
 ```
 $  npm run electron:build
