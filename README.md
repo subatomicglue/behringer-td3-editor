@@ -1,12 +1,8 @@
 # SubatomicTD3ditor - an Editor/Programmer for the Behringer TD3 running on Raspberry Pi
 
-A standalone pattern editor for the Behringer TD3.
-
-Running as:
- - Dedicated hardware appliance (raspberry pi based, read only file system)
- - Software app  (MacOS, Win, Linux)
-
-Written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
+A standalone pattern editor for the Behringer TD3.  
+- Running as a Dedicated hardware appliance (raspberry pi based, read only file system), or as a Software app  (MacOS, Win, Linux).
+- Written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
 
 ![screenshot](screenshot.jpg)
 
