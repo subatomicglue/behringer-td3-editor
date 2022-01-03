@@ -25,7 +25,7 @@ $ npm install
 $ npm start
 ```
 
-# Installer Packages
+# Build the Release Packages
 ### MacOS
 ```
 $  npm run electron:build
