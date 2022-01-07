@@ -1,6 +1,6 @@
-# SubatomicTD3ditor - an Editor/Programmer for the Behringer TD3 running on Raspberry Pi Touchscreen
+# Unlock the potential of your Behringer TD3 synthesizer
 
-**Unlock the potential of your Behringer TD3 synthesizer** 
+**SubatomicTD3ditor is an Editor/Programmer for the Behringer TD3 running on Raspberry Pi Touchscreen** 
 
 A standalone pattern editor for the Behringer TD3.
 - Dedicated Hardware Appliance w/ Touchscreen Display (Raspberry Pi based, Resilient read-only file system)
