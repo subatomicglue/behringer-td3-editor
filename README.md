@@ -53,7 +53,13 @@ $  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor
 ```
 
 # TODO, Future work:
+  - COPY/PASTE between patterns
   - SAVE/LOAD patterns to disk
+  - visualization views
+    - pattern view - scale button (show all notes at once, noninteractive)
+    - all paterns view
+  - sequencer
+    - for unlimited steps
   - rPI needs some polish
     - **Performance:**   UI can be a little slow, maybe because weak rPI combined with Angular (we could try SolidJS or vanilla Javascript to get more lean).
     - **Install Scripts:** rPI build/installation is automated, but the scripts are not available here...  yet.  (less important if we can publish pre-built packages for download)

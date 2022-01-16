@@ -4,6 +4,7 @@ import { ElectronService } from '../core/services/electron/electron.service';
 import * as td3 from '../../../app/td3';
 import * as stepseq from '../../../app/stepseq';
 import { getConfigFileParsingDiagnostics } from 'typescript/lib/tsserverlibrary';
+import { group } from 'console';
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -17,8 +18,8 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   name: string = "1234";
   model: string = "1234";
   version: string = "1234";
-  //pattern: any = {"group":0,"section":0,"pitches":[36,24,36,24,36,39,47,24,36,24,36,24,39,24,37,48],"accents":[0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0],"slides":[0,0,0,0,1,1,0,0,0,0,1,0,1,0,1,0],"triplet_mode":0,"step_count":16,"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0]};
-  pattern: any = {"group":0,"section":0,"pitches":[12,15,19,24,19,15,12,15,19,24,27,31,36,31,27,24],"accents":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"slides":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"triplet_mode":0,"step_count":16,"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
+  //pattern: any = {"group":0,"section":0,"triplet_mode":0,"step_count":16,"pitches":[36,24,36,24,36,39,47,24,36,24,36,24,39,24,37,48],"accents":[0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0],"slides":[0,0,0,0,1,1,0,0,0,0,1,0,1,0,1,0],"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0]};
+  pattern: any = {"group":0,"section":0,"triplet_mode":0,"step_count":16,"pitches":[12,15,19,24,19,15,12,15,19,24,27,31,36,31,27,24],"accents":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"slides":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
   bpm: number = -1;
   rows: any = [];
   lastStep: number = -1;
@@ -36,6 +37,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   minNote = 0x0c;
   maxNote = 0x31;
   AB=0;
+  hear=true;
 
   key_priority_lookup = [ [0x00, "Low"], [0x01, "Hi"], [0x02, "Last"] ];
   clock_trigger_rate_lookup = [ [0x00, "1 PPS"], [0x01, "2 PPQ"], [0x02, "24 PPQ"], [0x08, "48 PPQ"] ];
@@ -82,6 +84,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   async init() {
     this.pattern.group = this.getLocalStorage( "group", 0 )
     this.pattern.section = this.getLocalStorage( "section", 0 )
+    this.hear = this.getLocalStorage( "hear", 0 )
     await td3.close();
     await td3.open();
     this.ports = await td3.getPorts();
@@ -115,15 +118,18 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   async stepCountChange(e) {
     await this.setStepCount( parseInt( e.target.value ) );
   }
-  async sendPattern() {
-    this.pattern.ties = this.pattern.ties.map( r => 1 ) // we dont edit ties, just clear them
+  async sendPattern( pattern, group = undefined, section = undefined ) {
+    let p = Object.assign( {}, pattern ); // shallow clone object
+    p.ties = p.ties.map( r => 1 ) // we dont edit ties, just clear them
+    p.group = group !== undefined ? group : p.group;
+    p.section = section !== undefined ? section : p.section;
     if (await td3.isOpen()) {
-      await td3.send( td3.Send.SET_PATTERN( this.pattern ) );
+      await td3.send( td3.Send.SET_PATTERN( p ) );
     }
     //console.log( JSON.stringify( this.pattern ) );
   }
   async onPatternChanged( log_undo = true ) {
-    await this.sendPattern()
+    await this.sendPattern( this.pattern )
     await this.getPattern(); // always read it back so we are displaying what's on the device (in case it fails, or whatever)
     if (log_undo)
       await this.addUndoData( { pattern: this.pattern } );
@@ -191,16 +197,18 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     this.pattern.pitches[4] = this.barf ? 24 : 32
   }
 
-  toggleAccent() {
+  async toggleAccent() {
     if (this.lastStep != -1 && this.lastPitch != -1) {
       this.pattern.accents[this.lastStep] = !this.pattern.accents[this.lastStep];
-      this.onPatternChanged();
+      if (this.hear) this.sendNote( this.pattern.pitches[this.lastStep], this.pattern.accents[this.lastStep] == 1 );
+      await this.onPatternChanged();
     }
   }
-  toggleSlide() {
+  async toggleSlide() {
     if (this.lastStep != -1 && this.lastPitch != -1) {
       this.pattern.slides[this.lastStep] = !this.pattern.slides[this.lastStep];
-      this.onPatternChanged();
+      if (this.hear) this.sendNote( this.pattern.pitches[this.lastStep], this.pattern.accents[this.lastStep] == 1 );
+      await this.onPatternChanged();
     }
   }
 
@@ -220,6 +228,8 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     let accent_was = this.pattern.accents[step];
     let rest_was = this.pattern.rests[step];
 
+    if (this.hear) await this.sendNote( pitch, accent_was == 1 );
+
     // clicked onto a note
     if (pitch == pitch_was && rest_was == 0) {
       if (slide_was != slide) {
@@ -236,7 +246,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
         this.lastStep = step;
         this.lastPitch = pitch;
         //console.log( "selecting:", step, pitch )
-        this.onPatternChanged();
+        await this.onPatternChanged();
 
         return
       }
@@ -257,7 +267,16 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       this.lastPitch = pitch;
     }
 
-    this.onPatternChanged();
+    await this.onPatternChanged();
+  }
+
+  // 0x4F // normal velocity
+  // 0x7f // accent velocity
+  sendNote( note, vel:boolean = false ) {
+    td3.send( [ td3.MessageTypes.MIDI_NOTE_ON, note, vel ? 0x7F : 0x4F ] );
+    setTimeout( () => {
+      td3.send( [ td3.MessageTypes.MIDI_NOTE_OFF, note, 0x00 ] );
+    }, 500)
   }
 
   async onKeyDown( e ) {
@@ -290,11 +309,11 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   // }
 
   // tap on the left of the button to dec, right of the button to inc.
-  onStepsButton(e){
+  async onStepsButton(e){
     this.event2xy(e)[0] < (this.event2wh(e)[0]/2) ?
       (this.pattern.step_count = this.pattern.step_count <= 1  ?  1 : this.pattern.step_count - 1) :
       (this.pattern.step_count = 16 <= this.pattern.step_count ? 16 : this.pattern.step_count + 1);
-    this.onPatternChanged();
+    await this.onPatternChanged();
   }
 
   // tap on the left of the button to dec, right of the button to inc.
@@ -311,7 +330,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
 
   async setStepCount( sc ) {
     this.pattern.step_count = sc
-    this.onPatternChanged();
+    await this.onPatternChanged();
   }
 
   async setSection( s ) {
@@ -332,7 +351,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     await this.addUndoData( { pattern: this.pattern } );
   }
 
-  clear() {
+  async clear() {
     for (let x = 0; x < this.pattern.rests.length; ++x) {
       this.pattern.rests[x] = 1;
     }
@@ -342,9 +361,9 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     this.lastStep = -1;
     this.lastPitch = -1;
 
-    this.onPatternChanged();
+    await this.onPatternChanged();
   }
-  random() {
+  async random() {
     for (let x = 0; x < this.pattern.rests.length; ++x) {
       this.pattern.rests[x] = Math.floor(Math.random() + 0.5); // between 0..1  +  0.5
     }
@@ -360,7 +379,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     this.lastStep = -1;
     this.lastPitch = -1;
 
-    this.onPatternChanged();
+    await this.onPatternChanged();
   }
 
   async onClockTriggerRate() {
@@ -410,9 +429,18 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     localStorage.removeItem(key)
   }
 
-  undodata:any;
+  // UNDO & REDO
+  canUndo() {
+    return this.undodata && 0 < this.undodata.history.length && 0 < this.undodata.position;
+  }
+  canRedo() {
+    return this.undodata && this.undodata.position < (this.undodata.history.length - 1);
+  }
+
+  static readonly undodata_default:any = { position: 0, history: [] };
+  undodata:any = Object.assign( {}, HomeComponent.undodata_default ); // shallow clone object
   clearUndo() {
-    this.undodata = { position: 0, history: [] };
+    this.undodata = Object.assign( {}, HomeComponent.undodata_default ); // shallow clone object
     this.saveUndo();
     this.loadUndo();
   }
@@ -442,7 +470,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
 
   @HostListener('document:keydown.control.z')
   @HostListener('document:keydown.meta.z')
-  undo(/*event: KeyboardEvent*/) {
+  async undo(/*event: KeyboardEvent*/) {
     if (this.canUndo()) {
       // decrement the position
       this.undodata.position = Math.max( 0, this.undodata.position - 1 );
@@ -452,12 +480,12 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       // pattern at this undo level
       let data = JSON.parse( JSON.stringify( this.undodata.history[this.undodata.position] ) ); // simple deep clone
       this.pattern = data.pattern;
-      this.onPatternChanged( false );
+      await this.onPatternChanged( false );
     }
   }
   @HostListener('document:keydown.control.shift.z')
   @HostListener('document:keydown.meta.shift.z')
-  redo(/*event: KeyboardEvent*/) {
+  async redo(/*event: KeyboardEvent*/) {
     if (this.canRedo()) {
       // increment the position
       this.undodata.position = Math.min( this.undodata.history.length - 1, this.undodata.position + 1 );
@@ -467,21 +495,14 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
       // pattern at this undo level
       let data = JSON.parse( JSON.stringify( this.undodata.history[this.undodata.position] ) ); // simple deep clone
       this.pattern = data.pattern;
-      this.onPatternChanged( false );
+      await this.onPatternChanged( false );
     }
-  }
-
-  canUndo() {
-    return this.undodata && 0 < this.undodata.history.length && 0 < this.undodata.position;
-  }
-  canRedo() {
-    return this.undodata && this.undodata.position < (this.undodata.history.length - 1);
   }
 
   addUndoData( data ) {
     // adding undo data
     console.log( "undodata", this.undodata )
-    console.log( "history", this.undodata.history )
+    console.log( "history", this.undodata ? this.undodata.history : undefined )
     if (JSON.stringify(data) != JSON.stringify( this.undodata.history[this.undodata.position] )) {
       this.undodata.history = 0 < this.undodata.history.length ? this.undodata.history.slice( 0, this.undodata.position+1 ) : this.undodata.history;
 
@@ -492,5 +513,91 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     } else {
       console.log( `history!  level ${this.undodata.position} (skipped, already present)` )
     }
+  }
+
+  // COPY & PASTE
+  copybuffer:any = undefined;
+  canPaste() {
+    return this.copybuffer != undefined;
+  }
+  copy() {
+    this.copybuffer = JSON.parse( JSON.stringify( this.pattern ) ); // simple deep clone
+  }
+  async paste( buffer = undefined ) {
+    // preserve the current group/section
+    let group = this.pattern.group;
+    let section = this.pattern.section;
+    this.pattern = JSON.parse( JSON.stringify( buffer ? buffer : this.copybuffer ) ); // simple deep clone
+    this.pattern.group = group;
+    this.pattern.section = section;
+    await this.onPatternChanged();
+  }
+
+  toggleHear() {
+    this.hear = !this.hear;
+    this.setLocalStorage( "hear", this.hear )
+  }
+
+  settings:boolean = false;
+
+  async getAllPatterns() {
+    let data = [];
+    for (let g = 0; g < 4; ++g) {
+      for (let s = 0; s < 16; ++s) {
+        let pattern = await td3.send( td3.Send.GET_PATTERN( g, s ) )
+        data.push( pattern );
+      }
+    }
+    return data;
+  }
+  async save() {
+    this.inSaveLoad = true;
+    await this.electronService.ipcRenderer.invoke( 'save', "backup.json", JSON.stringify( await this.getAllPatterns() ) );
+    this.inSaveLoad = false;
+  }
+
+  async load() {
+    this.inSaveLoad = true;
+    let group = this.pattern.group;
+    let section = this.pattern.section;
+
+    let data = await this.electronService.ipcRenderer.invoke( 'load', "backup.json" );
+    if (data) {
+      data = JSON.parse( data );
+      for (let d of data) {
+        await this.setGroup( d.group );
+        await this.setSection( d.section );
+        await this.paste( d );
+      }
+
+      await this.setGroup( group );
+      await this.setSection( section );
+      this.settings = false; // exit the menu
+    }
+    this.inSaveLoad = false;
+  }
+
+  inSaveLoad:boolean = false;
+  async savePattern(name) {
+    this.inSaveLoad = true;
+    let p = Object.assign( {}, this.pattern ); // shallow clone object
+    delete p.group
+    delete p.section
+    await this.electronService.ipcRenderer.invoke( 'save', `backup-${name}.json`, JSON.stringify( p ) );
+    this.inSaveLoad = false;
+  }
+
+  async loadPattern(name) {
+    this.inSaveLoad = true;
+    let d = await this.electronService.ipcRenderer.invoke( 'load', `backup-${name}.json` );
+    if (d) {
+      await this.paste( JSON.parse( d ) );
+      this.settings = false; // exit the menu
+    }
+    this.inSaveLoad = false;
+  }
+
+  getPatternName() {
+    return `${["I","II","III","IV"][this.pattern.group]}${(this.pattern.section%8) + 1}${this.pattern.section < 8 ? "A" : "B"}`
   }
 }

@@ -195,6 +195,9 @@ a, a:hover, a:visited {
   background-color: lightblue;
   color: black;
   text-align: center;
+  overflow: auto;
+  line-height: 0.8rem;
+  vertical-align: bottom;
 }
 .TableButton-disabled {
   color: grey;
@@ -203,8 +206,20 @@ a, a:hover, a:visited {
   background-color: lightcyan;
   color: black;
 }
+.TableButton-icon {
+  line-height: 0.7rem;
+}
 
 H1 {
   margin: 0;
   font-size: 1em;
+}
+
+.settings {
+  position: absolute;
+  x:0;
+  y:0;
+  width:100vw;
+  height:100vh;
+  background-color: #333333;
 }

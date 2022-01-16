@@ -3,6 +3,24 @@
   LOADING PATTERN...
 </div>
 
+<div class="settings" *ngIf="settings">
+  <td class="" (click)="settings=false"><span class="material-icons Icon">close</span></td>
+
+  <div style="text-align: center;">
+    <h1>settings</h1>
+    <table style="margin-left: auto; margin-right: auto;">
+      <tr>
+        <td [ngClass]="{'TableButton': !inSaveLoad, 'TableButton-disabled': inSaveLoad, 'TableButton-icon': true }"  (click)="save()"><span class="material-icons Icon">download</span><BR><small>Backup All Patterns</small></td>
+        <td [ngClass]="{'TableButton': !inSaveLoad, 'TableButton-disabled': inSaveLoad, 'TableButton-icon': true }" (click)="load()"><span class="material-icons Icon">upload</span><BR><small>Restore All Patterns</small></td>
+      </tr>
+      <tr>
+        <td [ngClass]="{'TableButton': !inSaveLoad, 'TableButton-disabled': inSaveLoad, 'TableButton-icon': true }" (click)="savePattern(getPatternName())"><span class="material-icons Icon">download</span><BR><small>Backup {{getPatternName()}} Pattern</small></td>
+        <td [ngClass]="{'TableButton': !inSaveLoad, 'TableButton-disabled': inSaveLoad, 'TableButton-icon': true }" (click)="loadPattern(getPatternName())"><span class="material-icons Icon">upload</span><BR><small>Restore {{getPatternName()}} Pattern</small></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
 <div class="page-container" (window:keypress)="onKeyDown( $event )" *ngIf="pattern">
   <div class="page-header">
     <!--
@@ -10,7 +28,7 @@
     -->
     <table class="seq">
       <tr class="seq-row">
-        <td class="seq-cell-rowname">&nbsp;&nbsp;</td>
+        <td (click)="settings=true" class="seq-cell-rowname" style="text-align: center;"><span class="material-icons" style="width:0.5rem;height:0.5rem;">settings</span></td>
         <td [ngClass]="{'seq-cell': lastStep != step, 'seq-cell-sel':  lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step" (mousedown)="selectColumn($event, step)">&nbsp;&nbsp;</td>
       </tr>
     </table>
@@ -19,7 +37,7 @@
   <div class="page-content">
     <table class="seq">
       <tr class="seq-row" *ngFor="let row_pitch of rows.slice().reverse()">
-        <td [ngClass]="{'seq-cell-rowname':true, 'pianowhite': pianowhite[row_pitch % pianowhite.length]}"><span *ngIf="row_pitch % 12 == 0">{{pianonotes[row_pitch % 12]}}{{mathRef.floor( row_pitch/12 )}}</span></td>
+        <td [ngClass]="{'seq-cell-rowname':true, 'pianowhite': pianowhite[row_pitch % pianowhite.length]}" (click)="sendNote(row_pitch+12)"><span *ngIf="row_pitch % 12 == 0">{{pianonotes[row_pitch % 12]}}{{mathRef.floor( row_pitch/12 )}}</span></td>
         <td [ngClass]="{'seq-cell': !(lastPitch == row_pitch && lastStep == step), 'seq-cell-sel':  lastPitch == row_pitch && lastStep == step}" *ngFor="let pitch of pattern.pitches; index as step">
             <span [ngClass]="{ 'note-off': !(pitch == row_pitch && pattern.rests[step] == 0), 'note-on': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.accents[step] == 0), 'note-on-accent': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.accents[step] == 1) }" (mousedown)="setPitch($event, step, row_pitch, 0)"></span><span [ngClass]="{ 'note-off': !(pitch == row_pitch && pattern.rests[step] == 0) || (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 0), 'note-on': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 1 && pattern.accents[step] == 0), 'note-on-accent': (pitch == row_pitch && pattern.rests[step] == 0 && pattern.slides[step] == 1 && pattern.accents[step] == 1) }" (mousedown)="setPitch($event, step, row_pitch, 1)"></span>
           <!-- {{ pattern.rests[step] == 1 ? '&nbsp;&nbsp;' : (pitch == row_pitch ? ((pattern.accents[step] == 1 ? "a" : "-") + (pattern.slides[step] == 1 ? "s" : "-")) : '&nbsp;&nbsp;' )}} -->
@@ -33,32 +51,35 @@
     <table class="TableButtonTable">
       <tr class="TableButtonRow">
         <td class="TableButton-highlight" style="width: 4rem" (click)="onGroupButton($event)">Group {{(["I","II","III","IV"])[pattern.group]}}</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 0, 'TableButton-highlight':  (pattern.section%8) == 0}" (click)="setSection(0 + AB*8)">{{AB?"B":"A"}}1</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 1, 'TableButton-highlight':  (pattern.section%8) == 1}" (click)="setSection(1 + AB*8)">{{AB?"B":"A"}}2</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 2, 'TableButton-highlight':  (pattern.section%8) == 2}" (click)="setSection(2 + AB*8)">{{AB?"B":"A"}}3</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 3, 'TableButton-highlight':  (pattern.section%8) == 3}" (click)="setSection(3 + AB*8)">{{AB?"B":"A"}}4</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 4, 'TableButton-highlight':  (pattern.section%8) == 4}" (click)="setSection(4 + AB*8)">{{AB?"B":"A"}}5</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 5, 'TableButton-highlight':  (pattern.section%8) == 5}" (click)="setSection(5 + AB*8)">{{AB?"B":"A"}}6</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 6, 'TableButton-highlight':  (pattern.section%8) == 6}" (click)="setSection(6 + AB*8)">{{AB?"B":"A"}}7</td>
-        <td [ngClass]="{'TableButton': (pattern.section%8) != 7, 'TableButton-highlight':  (pattern.section%8) == 7}" (click)="setSection(7 + AB*8)">{{AB?"B":"A"}}8</td>
-        <td class="TableButton" (click)="toggleAB()">Sec.{{AB ? "B" : "A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 0, 'TableButton-highlight':  (pattern.section%8) == 0}" (click)="setSection(0 + AB*8)">1{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 1, 'TableButton-highlight':  (pattern.section%8) == 1}" (click)="setSection(1 + AB*8)">2{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 2, 'TableButton-highlight':  (pattern.section%8) == 2}" (click)="setSection(2 + AB*8)">3{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 3, 'TableButton-highlight':  (pattern.section%8) == 3}" (click)="setSection(3 + AB*8)">4{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 4, 'TableButton-highlight':  (pattern.section%8) == 4}" (click)="setSection(4 + AB*8)">5{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 5, 'TableButton-highlight':  (pattern.section%8) == 5}" (click)="setSection(5 + AB*8)">6{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 6, 'TableButton-highlight':  (pattern.section%8) == 6}" (click)="setSection(6 + AB*8)">7{{AB?"B":"A"}}</td>
+        <td [ngClass]="{'TableButton': (pattern.section%8) != 7, 'TableButton-highlight':  (pattern.section%8) == 7}" (click)="setSection(7 + AB*8)">8{{AB?"B":"A"}}</td>
+        <td class="TableButton" (click)="toggleAB()">Sec {{AB ? "B" : "A"}}</td>
       </tr>
     </table>
     <table class="TableButtonTable">
       <tr class="TableButtonRow">
-        <td class="TableButton" (click)="isPlaying ? stop() : start()"><span class="material-icons">{{isPlaying ? "stop" : "play_arrow"}}</span></td>
-        <td class="TableButton" (click)="onBpmButton($event)">{{ bpm }}bpm</td>
-        <td class="TableButton" (click)="onClockSrc()">Clk{{clock_src_lookup[clock_src][1]}}</td>
+        <td class="TableButton TableButton-icon" (click)="isPlaying ? stop() : start()"><span class="material-icons Icon">{{isPlaying ? "stop" : "play_arrow"}}</span><BR><small>Play</small></td>
+        <td class="TableButton" (click)="onBpmButton($event)">{{ bpm }}<BR><small>bpm</small></td>
+        <td class="TableButton" (click)="onClockSrc()">{{clock_src_lookup[clock_src][1]}}<BR><small>Clk</small></td>
         <td class="TableButton" (click)="onClockTriggerRate()" *ngIf="clock_src == 3">{{clock_src == 3 ? clock_trigger_rate_lookup[clock_trigger_rate][1] : "---"}}</td>
         <!-- <td class="TableButton" (click)="onKeyPriority()">{{key_priority_lookup[key_priority][1]}}</td> -->
-        <td class="TableButton" (click)="onStepsButton($event)">{{pattern.step_count}}Steps</td>
-        <td [ngClass]="{'TableButton': lastPitch != -1 && lastStep != -1, 'TableButton-disabled':  lastPitch == -1 || lastStep == -1}" (click)="toggleAccent()">Accent</td>
-        <td class="TableButton" (click)="clear()">Clear</td>
-        <td class="TableButton" (click)="random()">Rand</td>
-        <td [ngClass]="{'TableButton': canUndo(), 'TableButton-disabled': !canUndo() }" (click)="undo()"><span class="material-icons">undo</span></td>
-        <td [ngClass]="{'TableButton': canRedo(), 'TableButton-disabled': !canRedo() }" (click)="redo()"><span class="material-icons">redo</span></td>
+        <td class="TableButton" (click)="onStepsButton($event)">{{pattern.step_count}}<BR><small>Steps</small></td>
+        <td [ngClass]="{'TableButton': lastPitch != -1 && lastStep != -1, 'TableButton-highlight': 0 < this.lastStep ? this.pattern.accents[this.lastStep] == 1 : false, 'TableButton-disabled':  lastPitch == -1 || lastStep == -1, 'TableButton-icon': true}" (click)="toggleAccent()"><span class="material-icons Icon">volume_up</span><BR><small>Acc</small></td>
+        <td class="TableButton TableButton-icon" (click)="clear()"><span class="material-icons Icon">delete_sweep</span><BR><small>Clear</small></td>
+        <td class="TableButton TableButton-icon" (click)="random()"><span class="material-icons Icon">clear_all</span><BR><small>Rand</small></td>
+        <td class="TableButton TableButton-icon" (click)="copy()"><span class="material-icons Icon">content_copy</span><BR><small>Copy</small></td>
+        <td [ngClass]="{'TableButton': canPaste(), 'TableButton-disabled': !canPaste(), 'TableButton-icon': true }" (click)="paste()"><span class="material-icons Icon">content_paste</span><BR><small>Paste</small></td>
+        <td [ngClass]="{'TableButton': canUndo(), 'TableButton-disabled': !canUndo(), 'TableButton-icon': true }" (click)="undo()"><span class="material-icons Icon">undo</span><BR><small>Undo</small></td>
+        <td [ngClass]="{'TableButton': canRedo(), 'TableButton-disabled': !canRedo(), 'TableButton-icon': true }" (click)="redo()"><span class="material-icons Icon">redo</span><BR><small>Redo</small></td>
         <!-- <td [ngClass]="{'TableButton': canUndo() || canRedo(), 'TableButton-disabled': !(canUndo() || canRedo()) }" (click)="clearUndo()">clear</td> -->
-        <td class="TableButton" (click)="exit()"><span class="material-icons">power_settings_new</span></td>
+        <td [ngClass]="{'TableButton': true, 'TableButton-icon': true }" (click)="toggleHear()"><span class="material-icons Icon">{{hear ? "volume_up" : "volume_mute"}}</span><BR><small>{{hear ? "Hear" : "Mute"}}</small></td>
+        <td class="TableButton TableButton-icon" (click)="exit()"><span class="material-icons">power_settings_new</span><BR><small>Exit</small></td>
       </tr>
     </table>
 

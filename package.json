@@ -25,7 +25,7 @@
   "main": "app/main.js",
   "private": true,
   "scripts": {
-    "help": "echo 'start | clobber | rebuild | rebuild-midi | build | electron:build | electron:buildrpi | deploy-rpi'",
+    "help": "echo 'start | clobber | rebuild | rebuild-midi | build | electron:build | electron:buildrpi | deploy-rpi | deploy-rpi-and-electronbuild'",
     "postinstall": "electron-builder install-app-deps",
     "ng": "ng",
     "start": "npm-run-all -p electron:serve ng:serve",
@@ -45,8 +45,9 @@
     "lint": "ng lint",
     "rebuild": "rm -rf node_modules app/node_modules ; npm cache clear; npm i",
     "rebuild-midi": "cd app; npm rebuild midi --update-binary; cd -",
-    "deploy": "rm -rf ~/Applications/SubatomicTD3ditor.app;  cp -r release/mac/SubatomicTD3ditor.app ~/Applications/",
-    "deploy-rpi": "rsync -av -e ssh --exclude='.github/*' --exclude='.git/*' --exclude='node_modules/*' --exclude='app/node_modules/*' --exclude='.vscode/*'  --exclude='dist/*'  --exclude='release/*'  $(pwd)/ pi@raspberrypi.local:/home/pi/td3; echo 'ok, now run:'; echo '  ssh pi@raspberrypi.local'; echo '  cd ~/td3'; echo '  npm install'; echo '  npm run electron:buildrpi'; echo '  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor'",
+    "deploy": "echo '--- Installing into MacOS Applications/ ---' && rm -rf ~/Applications/SubatomicTD3ditor.app;  cp -r release/mac/SubatomicTD3ditor.app ~/Applications/",
+    "deploy-rpi": "echo '--- Sending project over to the pi ---' && rsync -av -e ssh --exclude='.github/*' --exclude='.git/*' --exclude='node_modules/*' --exclude='app/node_modules/*' --exclude='.vscode/*'  --exclude='dist/*'  --exclude='release/*'  $(pwd)/ pi@raspberrypi.local:/home/pi/td3; echo 'ok, now run:'; echo '  ssh pi@raspberrypi.local'; echo '  cd ~/td3'; echo '  npm install'; echo '  npm run electron:buildrpi'; echo '  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor'; echo ''; echo 'Back on the host (pull the new package back):'; echo '  rsync -av -e ssh pi@raspberrypi.local:/home/pi/td3/release/*.deb ./release/'",
+    "deploy-rpi-and-electronbuild": "npm run deploy-rpi; ssh pi@raspberrypi.local 'cd /home/pi/td3 && npm install && echo '--- This will take 10-20 min ---' && npm run electron:buildrpi'; mkdir -p release && echo '--- Downloading the built package ---' && rsync -av -e ssh pi@raspberrypi.local:/home/pi/td3/release/*.deb ./release/",
     "clobber": "rm -rf node_modules app/node_modules release dist"
   },
   "dependencies": {

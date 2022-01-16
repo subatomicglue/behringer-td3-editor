@@ -136,6 +136,9 @@ echo ""
 echo "Listing MIDI Devices:"
 remoteCmd "amidi -l"
 
+echo ""
+echo "Write access to the USB media mount point"
+remoteCmd "sudo chown -R pi:pi /media ; sudo chmod 777 -R /media"
 
 # DISPLAY=:0.0 cd '$INSTALL_DIR/release/linux-armv7l-unpacked' && ./$EXE
 

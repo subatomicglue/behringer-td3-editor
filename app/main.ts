@@ -2,13 +2,81 @@ import { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu } from 'elect
 import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
-
+import * as isPi from 'detect-rpi'; // detect raspberry pi
 import * as td3 from './td3';
 td3.useNode( require('midi') );
 
 // Initialize remote module
 require('@electron/remote/main').initialize();
 
+function mkdir( dir ) {
+  if (!fs.existsSync(dir)){
+    console.log( `[mkdir] creating directory ${dir}` )
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+// check the directory for write abilities
+function dirIsGood( dir ) {
+  return fs.existsSync( dir ) && checkPermissions( dir, fs.constants.R_OK | fs.constants.W_OK )
+}
+function getPlatform() {
+  return isPi() ? "pi" : process.platform;
+}
+function getUserDir() {
+  const appname = "subatomic3ditor";
+  const dotappname = ".subatomic3ditor";
+  // every path in the checklist needs to point to an app subfolder e.g. /subatomic3ditor,
+  let checklist = {
+    "pi": [
+      path.join( "/media/pi/USB", appname ),
+      path.join( "/media/pi/SDCARD", appname ),
+      path.join( process.env.HOME, "Documents", appname ),
+      path.join( process.env.HOME, "Downloads", appname ),
+      path.join( process.env.HOME, "Desktop", appname ),
+      path.join( process.env.HOME, dotappname )
+    ],
+    "darwin": [
+      path.join( process.env.HOME, "Documents", appname ),
+      path.join( process.env.HOME, "Downloads", appname ),
+      path.join( process.env.HOME, "Desktop", appname ),
+      path.join( process.env.HOME, dotappname )
+    ],
+    "win32": [
+      path.join( process.env.HOME, "Documents", appname ),
+      path.join( process.env.HOME, "Downloads", appname ),
+      path.join( process.env.HOME, "Desktop", appname ),
+      path.join( process.env.HOME, "AppData", appname ),
+      path.join( process.env.HOME, dotappname )
+    ],
+    "linux": [
+      path.join( process.env.HOME, "Documents", appname ),
+      path.join( process.env.HOME, "Downloads", appname ),
+      path.join( process.env.HOME, "Desktop", appname ),
+      path.join( process.env.HOME, dotappname )
+    ],
+    "unknown": [
+      path.join( process.env.HOME, "Documents", appname ),
+      path.join( process.env.HOME, "Downloads", appname ),
+      path.join( process.env.HOME, "Desktop", appname ),
+      path.join( process.env.HOME, dotappname )
+    ],
+  }
+  let platform = getPlatform();
+  let cl = checklist[platform] ? checklist[platform] : checklist["unknown"];
+  for (let d of cl) {
+    // every path in the checklist points to an app subfolder /subatomic3ditor,
+    // so check for the parent dir existing (we dont want to create Documents on a system that doesn't have it!)
+    let onelevelup = d.replace( /[\\/][^\\/]+$/, "" )
+    console.log( `[getUserDir] checking "${d}", "${onelevelup}" == ${dirIsGood( onelevelup )}` )
+    if (dirIsGood( onelevelup )) {
+      mkdir( d );
+      return d;
+    }
+  }
+  console.log( `[getUserDir] ERROR: no user directory found on this "${platform}" system!  After checking through these options: `, cl );
+  return undefined;
+}
+let userdir = getUserDir();
 
 let win: BrowserWindow = null;
 const args = process.argv.slice(1),
@@ -17,7 +85,7 @@ const args = process.argv.slice(1),
 function makeMenu() {
 let template: Electron.MenuItemConstructorOptions[] = [
   {
-    label: process.platform === 'darwin' ? 'Electron' : 'File',
+    label: getPlatform() !== 'pi' ? 'Electron' : 'File',
     submenu: [
       { role: 'quit' },
     ]
@@ -65,6 +133,19 @@ ipcMain.handle('exit', async (event, ...values) => {
   return 0;
 })
 
+ipcMain.handle('save', async (event, filename, data) => {
+  console.log( `[main.ts] save( "${path.join( userdir, filename )}", data )` )
+  fs.writeFileSync( path.join( userdir, filename ), data, 'utf8' );
+  return 0;
+})
+ipcMain.handle('load', async (event, filename) => {
+  console.log( `[main.ts] load( "${path.join( userdir, filename )}" )` )
+  if (fs.existsSync( path.join( userdir, filename ) )) {
+    return fs.readFileSync( path.join( userdir, filename ), 'utf8' );
+  }
+  return undefined;
+})
+
 //////////////////////////////////////////////////////////////////////////
 
 function createWindow(): BrowserWindow {
@@ -74,7 +155,7 @@ function createWindow(): BrowserWindow {
   // Create the browser window.
   win = new BrowserWindow({
     frame: false,
-    resizable: (process.platform === "win32" || process.platform === "darwin"), // we can resize on win/mac,  but no resize on raspberry pi (which is linux)
+    resizable: getPlatform() !== "pi", // we can resize on lin/win/mac,  but no resize on raspberry pi (which is linux)
     x: 0,
     y: 0,
     width: size.width,
@@ -116,6 +197,7 @@ function createWindow(): BrowserWindow {
     // })
 
     //win.removeMenu();
+
   }
 
   // Emitted when the window is closed.
@@ -129,7 +211,20 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
+// fs.accessSync is so close, yet just not there.   Make it return true/false:
+function checkPermissions( file, perms ) {
+  try {
+    fs.accessSync(file, perms);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
 try {
+  // switch electron userData path to the userdir, on the pi we run RO filesys, so this will give us RW localStorage as well.
+  app.setPath( 'userData', userdir );
+
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   // Some APIs can only be used after this event occurs.
