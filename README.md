@@ -4,7 +4,7 @@
 - **Intuitive Piano Roll:**  Intuitive piano roll note editing similar to SynthTribe or other popular MIDI editors.  Go beyond the "random" note generator, precisely craft/evolve patterns.
 - **Hardware Touchscreen:** Dedicated Hardware Appliance w/ Touchscreen Display (Raspberry Pi based, Resilient read-only file system)
 - **Runs on Desktop Too:**  Software app  (MacOS, Win, Linux).
-- **Some Code Trivia For Ya:**  Written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
+- **OpenSource:**  Written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
 
 
 **Unlock the potential of your Behringer TD3 synthesizer** 
