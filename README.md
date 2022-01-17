@@ -1,10 +1,11 @@
 # SubatomicTD3ditor is a performance Editor/Programmer for the Behringer TD3 running on Raspberry Pi Touchscreen
 
-- Edit patterns **while playing** during performance.  We can easily edit/tweak/evolve RD8/RD9 patterns while playing, why not TD3 also?
-- Intuitive piano roll note editing similar to SynthTribe or other popular MIDI editors.  Go beyond the "random" note generator, precisely craft/evolve patterns.
-- Dedicated Hardware Appliance w/ Touchscreen Display (Raspberry Pi based, Resilient read-only file system)
-- Software app  (MacOS, Win, Linux).
-- Written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
+- **Edit While Playing:**   Edit patterns **while playing** during performance.  We can easily edit/tweak/evolve RD8/RD9 patterns while playing, why not TD3 also?
+- **Intuitive Piano Roll:**  Intuitive piano roll note editing similar to SynthTribe or other popular MIDI editors.  Go beyond the "random" note generator, precisely craft/evolve patterns.
+- **Hardware Touchscreen:** Dedicated Hardware Appliance w/ Touchscreen Display (Raspberry Pi based, Resilient read-only file system)
+- **Runs on Desktop Too:**  Software app  (MacOS, Win, Linux).
+- **Some Code Trivia For Ya:**  Written in Angular (12) and NodeJS (14), packaged into an Electron (13) application.
+
 
 **Unlock the potential of your Behringer TD3 synthesizer** 
 
