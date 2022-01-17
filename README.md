@@ -55,8 +55,6 @@ $  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor
 ```
 
 # TODO, Future work:
-  - COPY/PASTE between patterns
-  - SAVE/LOAD patterns to disk
   - visualization views
     - pattern view - scale button (show all notes at once, noninteractive)
     - all paterns view
