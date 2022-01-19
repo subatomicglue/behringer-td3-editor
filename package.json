@@ -37,7 +37,7 @@
     "build:prod": "npm run build -- -c production",
     "ng:serve": "ng serve -c web -o",
     "electron:serve-tsc": "tsc -p tsconfig.serve.json",
-    "electron:serve-tscwatch": "wait-on tcp:4200 && tsc --watch -p tsconfig.serve.json",
+    "electron:serve-tscwatch": "tsc --watch -p tsconfig.serve.json",
     "electron:serve-electron": "wait-on tcp:4200 && npx electronmon . --serve",
     "electron:serve": "npm-run-all -p electron:serve-tscwatch electron:serve-electron",
     "electron:local": "export NG_CLI_ANALYTICS=\"false\" && npm run build:prod && npx electron .",
