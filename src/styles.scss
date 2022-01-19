@@ -211,15 +211,26 @@ a, a:hover, a:visited {
 }
 
 H1 {
-  margin: 0;
+  // margin: 0;
   font-size: 1em;
 }
 
-.settings {
-  position: absolute;
-  x:0;
-  y:0;
-  width:100vw;
-  height:100vh;
-  background-color: #333333;
+H2 {
+  // margin: 0;
+  font-size: 0.975em;
+  color: #ccccaa;
 }
+H3 {
+  // margin: 0;
+  font-size: 0.95em;
+  color: #aaaaaa;
+}
+
+// .settings {
+//   position: absolute;
+//   x:0;
+//   y:0;
+//   width:100vw;
+//   height:100vh;
+//   background-color: #333333;
+// }

@@ -13,7 +13,10 @@ import { group } from 'console';
 export class HomeComponent implements OnInit/*, OnChanges*/ {
   midiout;
   td3 = td3;
-  ports;
+  midi_inputport; // current selected port
+  midi_inputports; // all available ports
+  midi_outputport; // current selected port
+  midi_outputports; // all available ports
   seq: any;
   name: string = "1234";
   model: string = "1234";
@@ -81,19 +84,31 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     console.log( "openPort", e.target.value );
     //await td3.open( e );
   }
-  async init() {
+  async init( inputport = undefined, outputport = undefined ) {
     this.pattern.group = this.getLocalStorage( "group", 0 )
     this.pattern.section = this.getLocalStorage( "section", 0 )
     this.hear = this.getLocalStorage( "hear", 0 )
+    inputport = inputport !== undefined ? inputport : this.getLocalStorage( "midi_input", inputport !== undefined ? inputport : "TD-3" )
+    outputport = outputport !== undefined ? outputport : this.getLocalStorage( "midi_output", outputport !== undefined ? outputport : "TD-3" )
     await td3.close();
-    await td3.open();
-    this.ports = await td3.getPorts();
+    this.name = ""
+    this.model = ""
+    this.version = ""
+    await td3.open( inputport, outputport );
+    this.midi_outputports = await td3.getOutputPorts();
+    this.midi_outputport = await td3.getOutputPort();
+    this.midi_inputports = await td3.getInputPorts();
+    this.midi_inputport = await td3.getInputPort();
     if (await td3.isOpen()) {
       this.name = "Behringer " + await td3.send( td3.Send.GET_PRODUCT_NAME() );
       this.model = await td3.send( td3.Send.GET_MODEL_CODE() );
       this.version = await td3.send( td3.Send.GET_FIRMWARE_VERSION() );
       await this.getConfig();
       this.seq = td3;
+
+      // set the port in localStorage if it worked so it defaults next time in
+      this.setLocalStorage( "midi_input", await td3.getInputPort() )
+      this.setLocalStorage( "midi_output", await td3.getOutputPort() )
     } else {
       this.name = "Web";
       this.model = "Audio";
@@ -140,7 +155,8 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   }
   async start() {
     if (await td3.isOpen()) {
-      await td3.seqStart( 0x02 /* usb */ )
+      //await td3.seqStart( 0x02 /* usb */ )
+      await td3.seqStart()
     } else {
       stepseq.setPattern( this.pattern );
       stepseq.seqStart();
@@ -150,7 +166,8 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   }
   async stop() {
     if (await td3.isOpen()) {
-      await td3.seqStop( 0x00 /* internal */ )
+      //await td3.seqStop( 0x00 /* internal */ )
+      await td3.seqStop()
     } else {
       stepseq.seqStop();
     }
@@ -170,6 +187,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     if (await td3.isOpen()) {
       //console.log( "before get pattern: " , this.pattern )
       this.pattern = await td3.send( td3.Send.GET_PATTERN( this.pattern.group, this.pattern.section ) )
+      td3.seqPattern( this.pattern ); // set the software sequencer's pattern
       this.AB = this.pattern.section < 8 ? 0 : 1;
       this.loadUndo();
       //console.log( "after get pattern: " , this.pattern )
@@ -200,15 +218,15 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
   async toggleAccent() {
     if (this.lastStep != -1 && this.lastPitch != -1) {
       this.pattern.accents[this.lastStep] = !this.pattern.accents[this.lastStep];
-      if (this.hear) this.sendNote( this.pattern.pitches[this.lastStep], this.pattern.accents[this.lastStep] == 1 );
       await this.onPatternChanged();
+      if (this.hear) this.sendAuditionNote( this.pattern.pitches[this.lastStep], this.pattern.accents[this.lastStep] == 1 );
     }
   }
   async toggleSlide() {
     if (this.lastStep != -1 && this.lastPitch != -1) {
       this.pattern.slides[this.lastStep] = !this.pattern.slides[this.lastStep];
-      if (this.hear) this.sendNote( this.pattern.pitches[this.lastStep], this.pattern.accents[this.lastStep] == 1 );
       await this.onPatternChanged();
+      if (this.hear) this.sendAuditionNote( this.pattern.pitches[this.lastStep], this.pattern.accents[this.lastStep] == 1 );
     }
   }
 
@@ -228,7 +246,6 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     let accent_was = this.pattern.accents[step];
     let rest_was = this.pattern.rests[step];
 
-    if (this.hear) await this.sendNote( pitch, accent_was == 1 );
 
     // clicked onto a note
     if (pitch == pitch_was && rest_was == 0) {
@@ -247,6 +264,7 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
         this.lastPitch = pitch;
         //console.log( "selecting:", step, pitch )
         await this.onPatternChanged();
+        if (this.hear) this.sendAuditionNote( pitch, accent_was == 1 );
 
         return
       }
@@ -268,14 +286,15 @@ export class HomeComponent implements OnInit/*, OnChanges*/ {
     }
 
     await this.onPatternChanged();
+    if (this.hear) this.sendAuditionNote( pitch, accent_was == 1 );
   }
 
   // 0x4F // normal velocity
   // 0x7f // accent velocity
-  sendNote( note, vel:boolean = false ) {
-    td3.send( [ td3.MessageTypes.MIDI_NOTE_ON, note, vel ? 0x7F : 0x4F ] );
+  sendAuditionNote( note, acc:boolean = false ) {
+    td3.send( [ td3.MessageTypes.MIDI_NOTE_ON, note + 12, acc ? 0x7F : 0x4F ] );
     setTimeout( () => {
-      td3.send( [ td3.MessageTypes.MIDI_NOTE_OFF, note, 0x00 ] );
+      td3.send( [ td3.MessageTypes.MIDI_NOTE_OFF, note + 12, 0x00 ] );
     }, 500)
   }
 
