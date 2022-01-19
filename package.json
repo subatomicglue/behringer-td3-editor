@@ -4,7 +4,7 @@
   "URL": "https://www.subatomiclabs.com",
   "description": "Behringer TD-3 intuitive pattern editor for desktop & small touchscreens on dedicated hardware. The TD3 has a very difficult Ux for editing patterns, no thanks to the Roland TB303 designed in the 80's, iconic, but immesely obtuse to edit.  Behringer nailed THAT design 100%.  So here is an intuitive and visual editor to make editing patterns easy!  Enjoy!",
   "homepage": "https://www.subatomiclabs.com",
-  "author": "K.Meinert <kevinNOSPAMMMMREMOVETHIS@subatomicglue.com> (https://www.subatomicglue.com/)",
+  "author": "K.Meinert <kevinNOSPAMMMMREMOVETHIS@subatomicglue.com> (https://www.subatomiclabs.com/)",
   "email": "kevinNOSPAMMMMREMOVETHIS@subatomicglue.com",
   "keywords": [
     "behringer",
@@ -25,17 +25,21 @@
   "main": "app/main.js",
   "private": true,
   "electronmon": {
-    "patterns": ["!app/*.ts"]
+    "patterns": [
+      "!app/*.ts"
+    ]
   },
   "scripts": {
-    "help": "echo 'start | clobber | rebuild | rebuild-midi | build | electron:build | electron:buildrpi | deploy-rpi | deploy-rpi-and-electronbuild'",
+    "versions": "ng --version; echo npm `npm --version`; echo node `node --version`",
+    "help": "echo 'start | clobber | rebuild | rebuild-midi | build | electron:build | electron:buildrpi | deploy-rpi | deploy-rpi:buildrpi | versions'",
     "postinstall": "electron-builder install-app-deps",
     "ng": "ng",
     "start": "set NODE_ENV=development && npm-run-all -p ng:serve electron:serve-tscwatch electron:serve-electron",
     "build": "npm run electron:serve-tsc && ng build --base-href ./",
     "build:dev": "npm run build -- -c dev",
     "build:prod": "npm run build -- -c production",
-    "ng:serve": "ng serve -c web -o",
+    "ng:serve-openbrowser": "ng serve -c web --open",
+    "ng:serve": "ng serve -c web",
     "electron:serve-tsc": "tsc -p tsconfig.serve.json",
     "electron:serve-tscwatch": "tsc --watch -p tsconfig.serve.json",
     "electron:serve-electron": "wait-on tcp:4200 && npx electronmon . --serve",
@@ -52,7 +56,7 @@
     "rebuild-midi": "cd app; npm rebuild midi --update-binary; cd -",
     "deploy": "echo '--- Installing into MacOS Applications/ ---' && rm -rf ~/Applications/SubatomicTD3ditor.app;  cp -r release/mac/SubatomicTD3ditor.app ~/Applications/",
     "deploy-rpi": "echo '--- Sending project over to the pi ---' && rsync -av -e ssh --exclude='.github/*' --exclude='.git/*' --exclude='node_modules/*' --exclude='app/node_modules/*' --exclude='.vscode/*'  --exclude='dist/*'  --exclude='release/*'  $(pwd)/ pi@raspberrypi.local:/home/pi/td3; echo 'ok, now run:'; echo '  ssh pi@raspberrypi.local'; echo '  cd ~/td3'; echo '  npm install'; echo '  npm run electron:buildrpi'; echo '  DISPLAY=:0.0 release/linux-armv7l-unpacked/subatomictd3ditor'; echo ''; echo 'Back on the host (pull the new package back):'; echo '  rsync -av -e ssh pi@raspberrypi.local:/home/pi/td3/release/*.deb ./release/'",
-    "deploy-rpi-and-electronbuild": "npm run deploy-rpi; ssh pi@raspberrypi.local 'cd /home/pi/td3 && npm install && echo '--- This will take 10-20 min ---' && npm run electron:buildrpi'; mkdir -p release && echo '--- Downloading the built package ---' && rsync -av -e ssh pi@raspberrypi.local:/home/pi/td3/release/*.deb ./release/",
+    "deploy-rpi:buildrpi": "npm run deploy-rpi; ssh pi@raspberrypi.local 'cd /home/pi/td3 && npm install && echo '--- This will take 10-20 min ---' && npm run electron:buildrpi'; mkdir -p release && echo '--- Downloading the built package ---' && rsync -av -e ssh pi@raspberrypi.local:/home/pi/td3/release/*.deb ./release/",
     "clobber": "rm -rf node_modules app/node_modules release dist"
   },
   "dependencies": {
@@ -95,7 +99,6 @@
     "cross-env": "7.0.3",
     "electron": "13.1.7",
     "electron-builder": "22.11.9",
-    "electron-reload": "1.5.0",
     "electronmon": "2.0.2",
     "eslint": "7.30.0",
     "eslint-plugin-import": "2.23.4",
