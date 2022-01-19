@@ -6,12 +6,17 @@ import * as isPi from 'detect-rpi'; // detect raspberry pi
 import * as td3 from './td3';
 td3.useNode( require('midi') );
 
+const env = process.env.NODE_ENV || 'development';
+console.log( `\n[main.ts] environment = ${env}`)
+
 // Initialize remote module
 require('@electron/remote/main').initialize();
 
+let VERBOSE = false;
+
 function mkdir( dir ) {
   if (!fs.existsSync(dir)){
-    console.log( `[mkdir] creating directory ${dir}` )
+    VERBOSE && console.log( `[mkdir] creating directory ${dir}` )
     fs.mkdirSync(dir, { recursive: true });
   }
 }
@@ -67,13 +72,13 @@ function getUserDir() {
     // every path in the checklist points to an app subfolder /subatomic3ditor,
     // so check for the parent dir existing (we dont want to create Documents on a system that doesn't have it!)
     let onelevelup = d.replace( /[\\/][^\\/]+$/, "" )
-    console.log( `[getUserDir] checking "${d}", "${onelevelup}" == ${dirIsGood( onelevelup )}` )
+    VERBOSE && console.log( `[getUserDir] checking "${d}", "${onelevelup}" == ${dirIsGood( onelevelup )}` )
     if (dirIsGood( onelevelup )) {
       mkdir( d );
       return d;
     }
   }
-  console.log( `[getUserDir] ERROR: no user directory found on this "${platform}" system!  After checking through these options: `, cl );
+  VERBOSE && console.log( `[getUserDir] ERROR: no user directory found on this "${platform}" system!  After checking through these options: `, cl );
   return undefined;
 }
 let userdir = getUserDir();
@@ -118,9 +123,9 @@ const menu = Menu.buildFromTemplate(makeMenu());
 // call it from the renderer like so:
 //   let result = await this.electronService.ipcRenderer.invoke( 'td3', 'setBpm', bpm );
 ipcMain.handle('td3', async (event, FUNC, ...values) => {
-  console.log( `[main.ts] td3.${FUNC}( ${values.join(", ")} )` )
+  VERBOSE && console.log( `[main.ts] td3.${FUNC}( ${values.join(", ")} )` )
   let result = td3.hasOwnProperty( FUNC ) ? await td3[FUNC](...values) : `ERROR: no such function as td3.${FUNC}(...)`;
-  console.log( `       <= ${JSON.stringify( result )}` )
+  VERBOSE && console.log( `       <= ${JSON.stringify( result )}` )
   return result;
 })
 
@@ -128,18 +133,18 @@ ipcMain.handle('td3', async (event, FUNC, ...values) => {
 // call it from the renderer like so:
 //   let result = await this.electronService.ipcRenderer.invoke( 'td3', 'setBpm', bpm );
 ipcMain.handle('exit', async (event, ...values) => {
-  console.log( `[main.ts] exit( ${values.join(", ")} )` )
+  VERBOSE && console.log( `[main.ts] exit( ${values.join(", ")} )` )
   process.exit(0);
   return 0;
 })
 
 ipcMain.handle('save', async (event, filename, data) => {
-  console.log( `[main.ts] save( "${path.join( userdir, filename )}", data )` )
+  VERBOSE && console.log( `[main.ts] save( "${path.join( userdir, filename )}", data )` )
   fs.writeFileSync( path.join( userdir, filename ), data, 'utf8' );
   return 0;
 })
 ipcMain.handle('load', async (event, filename) => {
-  console.log( `[main.ts] load( "${path.join( userdir, filename )}" )` )
+  VERBOSE && console.log( `[main.ts] load( "${path.join( userdir, filename )}" )` )
   if (fs.existsSync( path.join( userdir, filename ) )) {
     return fs.readFileSync( path.join( userdir, filename ), 'utf8' );
   }
@@ -234,7 +239,7 @@ try {
     //Menu.setApplicationMenu(menu);
 
     let os = require('os');
-    console.log( "Happy Announcement:    HELLO, I Exist!" )
+    console.log( "\n----------------------------------------\nHappy Announcement:    HELLO, I Exist!" )
     console.log( "OS Type:", os.type() ); // "Windows_NT"
     console.log( "OS Release:", os.release() ); // "10.0.14393"
     console.log( "OS Platform:", os.platform() ); // "win32"
@@ -265,16 +270,17 @@ try {
     // On OS X it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     //if (process.platform !== 'darwin') {
-      //app.quit();
+      app.quit();
       console.log( "will quit" )
-      //app.exit(0);
+      app.exit(0);
+      //process.exit(-1);
     //}
   });
 
   process.on('beforeExit', (code) => {
-    console.log( "beforeExit" )
+    console.log( "beforeExit", code )
     if (code) {
-     //process.exit(code);
+     process.exit(code);
     }
    });
 
