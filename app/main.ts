@@ -6,13 +6,14 @@ import * as isPi from 'detect-rpi'; // detect raspberry pi
 import * as td3 from './td3';
 td3.useNode( require('midi') );
 
-const env = process.env.NODE_ENV || 'development';
-console.log( `\n[main.ts] environment = ${env}`)
-
 // Initialize remote module
 require('@electron/remote/main').initialize();
 
-let VERBOSE = false;
+const env = process.env.NODE_ENV || 'development';
+let VERBOSE = env != 'development' ? false : true;
+console.log( `\n` );
+console.log( `[main.ts] -----------------------------------------` );
+console.log( `[main.ts] environment = ${env}, VERBOSE=${VERBOSE}` )
 
 function mkdir( dir ) {
   if (!fs.existsSync(dir)){
@@ -27,9 +28,9 @@ function dirIsGood( dir ) {
 function getPlatform() {
   return isPi() ? "pi" : process.platform;
 }
-function getUserDir() {
-  const appname = "subatomic3ditor";
-  const dotappname = ".subatomic3ditor";
+function getUserDir( name ) {
+  const appname = name;
+  const dotappname = "." + name;
   // every path in the checklist needs to point to an app subfolder e.g. /subatomic3ditor,
   let checklist = {
     "pi": [
@@ -69,7 +70,7 @@ function getUserDir() {
   let platform = getPlatform();
   let cl = checklist[platform] ? checklist[platform] : checklist["unknown"];
   for (let d of cl) {
-    // every path in the checklist points to an app subfolder /subatomic3ditor,
+    // every path in the checklist points to an app subfolder /${name},
     // so check for the parent dir existing (we dont want to create Documents on a system that doesn't have it!)
     let onelevelup = d.replace( /[\\/][^\\/]+$/, "" )
     VERBOSE && console.log( `[getUserDir] checking "${d}", "${onelevelup}" == ${dirIsGood( onelevelup )}` )
@@ -81,7 +82,8 @@ function getUserDir() {
   VERBOSE && console.log( `[getUserDir] ERROR: no user directory found on this "${platform}" system!  After checking through these options: `, cl );
   return undefined;
 }
-let userdir = getUserDir();
+
+let userdir = getUserDir( "subatomic3ditor" );
 
 let win: BrowserWindow = null;
 const args = process.argv.slice(1),
@@ -119,30 +121,40 @@ return template;
 
 const menu = Menu.buildFromTemplate(makeMenu());
 
-// one renderer binding to rule all of td3...
-// call it from the renderer like so:
-//   let result = await this.electronService.ipcRenderer.invoke( 'td3', 'setBpm', bpm );
-ipcMain.handle('td3', async (event, FUNC, ...values) => {
-  VERBOSE && console.log( `[main.ts] td3.${FUNC}( ${values.join(", ")} )` )
-  let result = td3.hasOwnProperty( FUNC ) ? await td3[FUNC](...values) : `ERROR: no such function as td3.${FUNC}(...)`;
-  VERBOSE && console.log( `       <= ${JSON.stringify( result )}` )
-  return result;
-})
+function consoleLogIPC( module, funcname, FUNC, values, result ) {
+  let result_str = result === undefined ? "undefined" : JSON.stringify( result );
+  let limit = 10;
+  VERBOSE && console.log( `[${module}] ${funcname}.${FUNC}(${values.length>0?' ':''}${values.map(r=>typeof r == "string" ? `"${r}"` : r).join(", ")}${values.length>0?' ':''})`, result_str.length <= limit ? `=> ${result_str}` : '' )
+  VERBOSE && result_str.length > limit && console.log( `       <= ${JSON.stringify( result )}` )
+}
 
 // one renderer binding to rule all of td3...
 // call it from the renderer like so:
 //   let result = await this.electronService.ipcRenderer.invoke( 'td3', 'setBpm', bpm );
+ipcMain.handle('td3', async (event, FUNC, ...values) => {
+  let result = td3.hasOwnProperty( FUNC ) ? await td3[FUNC](...values) : `ERROR: no such function as td3.${FUNC}(...)`;
+  consoleLogIPC( "main.ts", "td3", FUNC, values, result );
+  return result;
+})
+
+// call it from the renderer like so:
+//   let result = await this.electronService.ipcRenderer.invoke( 'exit' );
 ipcMain.handle('exit', async (event, ...values) => {
   VERBOSE && console.log( `[main.ts] exit( ${values.join(", ")} )` )
   process.exit(0);
   return 0;
 })
 
+// call it from the renderer like so:
+//   let result = await this.electronService.ipcRenderer.invoke( 'save', filename, data );
 ipcMain.handle('save', async (event, filename, data) => {
   VERBOSE && console.log( `[main.ts] save( "${path.join( userdir, filename )}", data )` )
   fs.writeFileSync( path.join( userdir, filename ), data, 'utf8' );
   return 0;
 })
+
+// call it from the renderer like so:
+//   let result = await this.electronService.ipcRenderer.invoke( 'load', filename );
 ipcMain.handle('load', async (event, filename) => {
   VERBOSE && console.log( `[main.ts] load( "${path.join( userdir, filename )}" )` )
   if (fs.existsSync( path.join( userdir, filename ) )) {
@@ -178,9 +190,6 @@ function createWindow(): BrowserWindow {
 
   if (serve) {
     win.webContents.openDevTools();
-    require('electron-reload')(__dirname, {
-      electron: require(path.join(__dirname, '/../node_modules/electron'))
-    });
     win.loadURL('http://localhost:4200');
   } else {
     // Path when running electron executable
@@ -202,11 +211,11 @@ function createWindow(): BrowserWindow {
     // })
 
     //win.removeMenu();
-
   }
 
   // Emitted when the window is closed.
   win.on('closed', () => {
+    console.log( `[main.ts] win 'closed'` )
     // Dereference the window object, usually you would store window
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
@@ -239,10 +248,10 @@ try {
     //Menu.setApplicationMenu(menu);
 
     let os = require('os');
-    console.log( "\n----------------------------------------\nHappy Announcement:    HELLO, I Exist!" )
-    console.log( "OS Type:", os.type() ); // "Windows_NT"
-    console.log( "OS Release:", os.release() ); // "10.0.14393"
-    console.log( "OS Platform:", os.platform() ); // "win32"
+    console.log( "[main.ts] app 'ready':  Happy Announcement:    HELLO, I Exist!" )
+    console.log( "[main.ts] app 'ready':  OS Type:", os.type() ); // "Windows_NT"
+    console.log( "[main.ts] app 'ready':  OS Release:", os.release() ); // "10.0.14393"
+    console.log( "[main.ts] app 'ready':  OS Platform:", os.platform() ); // "win32"
   });
 
   /*
@@ -259,33 +268,38 @@ try {
 
   // Quit when all windows are closed.
   app.on('window-all-closed', () => {
-    // On OS X it is common for applications and their menu bar
+    console.log( "[main.ts] app 'window-all-closed'" );
+    // On OS X it is common (but really old convention that's antiquated) for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     //if (process.platform !== 'darwin') {
+      console.log( "[main.ts] app 'window-all-closed': app.quit()" );
       app.quit();
     //}
   });
 
   app.on('will-quit', () => {
-    // On OS X it is common for applications and their menu bar
+    console.log( "[main.ts] app 'will-quit'" );
+    // On OS X it is common (but really old convention that's antiquated) for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     //if (process.platform !== 'darwin') {
+      VERBOSE && console.log( "[main.ts] app 'will-quit': app.quit()" );
       app.quit();
-      console.log( "will quit" )
+      VERBOSE && console.log( "[main.ts] app 'will-quit': app.exit(0)" );
       app.exit(0);
-      //process.exit(-1);
     //}
   });
 
   process.on('beforeExit', (code) => {
-    console.log( "beforeExit", code )
+    console.log( "[main.ts] app 'beforeExit'", code )
     if (code) {
-     process.exit(code);
+      VERBOSE && console.log( `[main.ts] app 'beforeExit': process.exit( ${code} )` );
+      process.exit(code);
     }
    });
 
 
   app.on('activate', () => {
+    console.log( `[main.ts] app 'activate'` );
     // On OS X it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (win === null) {
@@ -294,6 +308,7 @@ try {
   });
 
 } catch (e) {
+  console.log( `[main.ts] catch(${e}) { throw ${e} }` );
   // Catch Error
-  // throw e;
+  throw e;
 }
