@@ -648,20 +648,138 @@ function send( msg ) {
 function sendNoSync( msg ) { sendMessage( msg ) }
 
 
+/// nodejs:
+///   1.3-1.5ms resolution on macos (2019 mbp 16") with both 0ms for setInterval
+/// chrome
+///   3.6-4.7ms resolution on macos (2019 mbp 16") with both 0ms for setInterval
+const setFastestInterval = function( callback ) {
+	let start = process.hrtime.bigint(); // nanosec
+	//let start = performance.now(); // msec
+	//let start = Date.now(); // msec
+	const timeout = setInterval( () => {
+    let end = process.hrtime.bigint(); // nanosec
+    //let end = performance.now(); // msec
+	  //let end = Date.now(); // msec
+    let diff = Number( end - start ) * 0.000001; // nano to msec
+    //let diff = Number( end - start );
+    callback( diff * 0.001 ); // msec to sec
+    start = end;
+	}, 0 );
+
+	return timeout;
+};
+
+const clearFastestInterval = function(timeout) {
+	clearInterval( timeout );
+};
+
+// test for smallest resolution setInterval can handle.
+// let td_accum = 0;
+// setExactInterval( (td) => {
+//   td_accum += td;
+//   if (debug_bpm_msg++ % 1000 == 0) { console.log( td_accum/1000.0, td, "average" ); td_accum = 0; }
+// }, 0)
+
+
+// software based sequencer
+class Sequencer {
+  midi_ch = 0;
+  use_seq_clock = false;
+  pattern = {"triplet_mode":0,"step_count":16,"pitches":[12,15,19,24,19,15,12,15,19,24,27,31,36,31,27,24],"accents":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"slides":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"ties":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"rests":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]};
+  runningtime_step = 0;
+  runningtime_clock = 0;
+  runningtime_total = 0;
+  step = 0;
+  stepcounter = 0;
+  constructor() {
+  }
+  start() {
+    //if (use_seq_clock) {
+      sendNoSync([0xFA]); // MIDI SEQ Start (td3 respnds to 0xFB, but other seqs on the chain may need a start msg, so send it!)
+      if (this.use_seq_clock) sendNoSync([0xFB]); // TD-3  seq start (requires USB clock, and timing pulse)
+      sendNoSync([0xF8]); // send a clock tick
+    //}
+    this.runningtime = 0
+    this.step = 0;
+    this.stepcounter = 0;
+  }
+  update( timedelta ) {
+    const steptime = bpmToMs( bpm, 1 ) * 0.001 * (1/4);   // 4  steps per beat
+    const clocktime = bpmToMs( bpm, 1 ) * 0.001 * (1/24);
+    this.runningtime_clock += timedelta;
+    this.runningtime_total += timedelta;
+    while (clocktime <= this.runningtime_clock) {
+      this.runningtime_clock -= clocktime;
+      let next_step = false;
+
+      if (debug_bpm_msg++ % 1000 == 0)  console.log( timedelta, this.runningtime_total, this.runningtime, next_step, steptime, clocktime )
+
+      // fire events
+      if (this.use_seq_clock) {
+        if (debug_bpm_msg++ % 1000 == 0) console.log( "[td3] ...sending many clocks... interval timer ms=", bpmToMs( bpm ))
+        sendNoSync([0xF8]); // send a clock tick
+      } else {
+        if (this.pattern) {
+          sendNoSync([0xF8]); // send a clock tick (hey, i'm the clock source!)
+          if (this.stepcounter == 0) {
+            let last_step = (this.step + this.pattern.step_count - 1) % this.pattern.step_count;
+            let last_pitch = this.pattern.pitches[last_step];
+            //let last_accent = this.pattern.accents[last_step];
+            let last_slide = this.pattern.slides[last_step];
+            let last_rest = this.pattern.rests[last_step];
+            let pitch = this.pattern.pitches[this.step];
+            let accent = this.pattern.accents[this.step];
+            //let slide = this.pattern.slides[this.step];
+            let rest = this.pattern.rests[this.step];
+
+            if (!last_slide && last_rest == 0) {
+              sendNoSync([ MessageTypes.MIDI_NOTE_OFF + this.midi_ch, last_pitch + 12, 0x00 ] );
+            }
+            if (rest == 0) {
+              sendNoSync([ MessageTypes.MIDI_NOTE_ON + this.midi_ch, pitch + 12, accent ? 0x7F : 0x4F ] );
+              console.log( `[note] note:${pitch + 12} vel:${accent ? 0x7F : 0x4F}` )
+            }
+            if (last_slide && last_rest == 0) {
+              sendNoSync([ MessageTypes.MIDI_NOTE_OFF + this.midi_ch, last_pitch + 12, 0x00 ] );
+            }
+
+            // advance the step
+            this.step = (this.step + 1) % this.pattern.step_count;
+          }
+        }
+      }
+      this.stepcounter = (this.stepcounter + 1) % Math.floor(steptime/clocktime)
+    }
+  }
+
+  stop() {
+    //if (use_seq_clock) {
+      console.log( "[td3] stopping sequencer" );
+      sendNoSync([MessageTypes.MIDI_CONTROL_CHANGE + this.midi_ch, 0x7B, 0x00]); // all notes off
+      sendNoSync([0xFC]); // stop seq
+    //}
+  }
+
+  setPattern( p ) {
+    sendNoSync([MessageTypes.MIDI_CONTROL_CHANGE + this.midi_ch, 0x7B, 0x00]); // all notes off
+    this.pattern = Object.assign( {}, p ); // shallow object clone
+  }
+}
+let seq = new Sequencer();
+
+
 function setBpm( b ) {
   bpm = b;
   console.log( `[td3] setting bpm to ${bpm}` )
+  console.log( "      ", bpmToMs( bpm, 48 ) );
   if (interval) {
-    clearInterval( interval );
+    clearFastestInterval( interval );
   }
-  interval = setInterval(function() {
+  interval = setFastestInterval( (timedelta) => {
     if (start_seq) {
-      if (debug_bpm_msg++ % 1000 == 0) console.log( "[td3] ...sending many clocks... interval timer ms=", bpmToMs( bpm ))
-      sendNoSync([0xF8]); // send a clock tick
+      seq.update( timedelta );
     }
-  }, bpmToMs( bpm ) * 0.6 ); // scale by 0.6 is needed to match the tempo on actual td3... 0.6???   why????
-                             // bpmToMs math works out, so why.
-                             // javascript interval timer that inaccurate?  it's totally possible.  it's not a RT system.....
+  });
   return true
 }
 
@@ -676,9 +794,7 @@ function seqStart( clock_src = -1 /* 0 int 1 din 2 usb */ ) {
   console.log( `[td3] starting sequencer` )
   if (0 <= clock_src) sendNoSync(Send.SET_CLOCK_SRC( clock_src ));
   if (!start_seq) {
-    sendNoSync([0xFA]); // MIDI SEQ Start (td3 respnds to 0xFB, but other seqs on the chain may need a start msg, so send it!)
-    sendNoSync([0xFB]); // TD-3  seq start (requires USB clock, and timing pulse)
-    sendNoSync([0xF8]); // send a clock tick
+    seq.start();
   }
   start_seq = true;
   setBpm( bpm );
@@ -686,13 +802,17 @@ function seqStart( clock_src = -1 /* 0 int 1 din 2 usb */ ) {
 }
 function seqStop( clock_src = -1 /* 0 int 1 din 2 usb */ ) {
   if (0 <= clock_src) sendNoSync(Send.SET_CLOCK_SRC( clock_src ));
-  if (start_seq) { console.log( "[td3] stopping sequencer" ); sendNoSync([0xFC]); }
+  if (start_seq) { seq.stop(); }
   start_seq = false;
   return true
 }
 function seqStartToggle() {
   start_seq ? seqStop() : seqStart();
   return start_seq
+}
+function seqPattern( p ) {
+  seq.setPattern( p )
+  VERBOSE && console.log( "[td3] td3.seqPattern", JSON.stringify( seq.pattern ) )
 }
 
 // return array of indexes that match
@@ -702,11 +822,13 @@ function indexOfRegex( ary, regex ) {
 
 
 let isOpen = () => false;
-let open = () => { console.log( "[td3] open() no implementation" ); };
+let open = (in_name, out_name) => { console.log( "[td3] open() no implementation" ); };
 let close = () => { console.log( "[td3] close() no implementation" ); };
 let sendMessage = (msg) => { console.log( "[td3] sendMessage() no implementation" ); };
-let getPorts = () => { console.log( "not implemented"); return [] }
+let getOutputPorts = () => { console.log( "not implemented"); return [] }
 let getInputPorts = () => { console.log( "not implemented"); return [] }
+let getOutputPort = () => { console.log( "not implemented"); return [] }
+let getInputPort = () => { console.log( "not implemented"); return [] }
 
 
 module.exports = { MessageTypes,
@@ -726,9 +848,10 @@ module.exports = { MessageTypes,
   isOpen,
   close,
   seqStart,
+  seqStop,
+  seqPattern,
   setBpm,
   getBpm,
-  seqStop,
   useNode,
   useElectronBrowser,
 }
@@ -739,34 +862,37 @@ function useNode( midi ) {
     output: undefined,
     input: undefined,
   }
+  let detected_output_index = -1;
+  let detected_input_index = -1;
 
-  function midi_isOpen() { return node_state.output && 0 < node_state.output.getPortCount() && 0 < node_state.input.getPortCount() }
+  function midi_isOpen() { return node_state.output && 0 < node_state.output.getPortCount() && 0 < node_state.input.getPortCount() && node_state.output.isPortOpen() && node_state.input.isPortOpen() }
 
-  async function midi_open() {
+  async function midi_open( in_name = "TD-3", out_name = "TD-3" ) {
     if (node_state.output) delete node_state.output;
     if (node_state.input) delete node_state.input;
     node_state.output = new midi.Output();
     node_state.input = new midi.Input();
 
-    let output_ports = getPorts();
-    let output_indexes = indexOfRegex( output_ports, /TD-3/ )
-    let default_output_index = (0 < output_indexes.length) ? output_indexes[0] : 0;
+    let output_ports = getOutputPorts();
+    let output_indexes = indexOfRegex( output_ports, new RegExp( out_name ) )
+    detected_output_index = (0 < output_indexes.length) ? output_indexes[0] : 0;
     console.log( `[td3] Output Ports: ${output_ports.length} [${output_ports.map( r=>`\"${r}\"`).join( "," )}]` )
 
     let input_ports = getInputPorts();
-    let input_indexes = indexOfRegex( input_ports, /TD-3/ )
-    let default_input_index = (0 < input_indexes.length) ? input_indexes[0] : 0;
+    let input_indexes = indexOfRegex( input_ports, new RegExp( in_name ) )
+    detected_input_index = (0 < input_indexes.length) ? input_indexes[0] : 0;
     console.log( `[td3] Input Ports: ${input_ports.length} [${input_ports.map( r=>`\"${r}\"`).join( "," )}]` )
 
     // setup OUT
     if (0 < output_ports.length) {
-      console.log( `[td3] -> Opening Output Port: ${output_ports[default_output_index]}` );
-      node_state.output.openPort(default_output_index);
+      console.log( `[td3] -> Opening Output Port: ${output_ports[detected_output_index]}` );
+      node_state.output.openPort(detected_output_index);
+      console.log( `[td3]                         ${node_state.output.isPortOpen() ? "success" : "fail"} for port:${detected_output_index}` );
     }
 
     // setup IN
     if (0 < input_ports.length) {
-      console.log( `[td3] -> Opening Input Port: ${input_ports[default_input_index]}` );
+      console.log( `[td3] -> Opening Input Port: ${input_ports[detected_input_index]}` );
 
       // Configure a callback.
       node_state.input.on('message', (deltaTime, message) => {
@@ -777,8 +903,9 @@ function useNode( midi ) {
         message_decode( message, deltaTime );
       });
 
-      // Open the first available input port.
-      node_state.input.openPort(default_input_index);
+      // Open the detected input port.
+      node_state.input.openPort(detected_input_index);
+      console.log( `[td3]                         ${node_state.input.isPortOpen() ? "success" : "fail"} for port:${detected_input_index}` );
 
       // Sysex, timing, and active sensing messages are ignored
       // by default. To enable these message types, pass false for
@@ -817,8 +944,10 @@ function useNode( midi ) {
   module.exports.open = open = midi_open;
   module.exports.close = close = midi_close;
   module.exports.sendMessage = sendMessage = midi_sendMessage;
-  module.exports.getPorts = getPorts = () => node_state.output ? [...Array(node_state.output.getPortCount()).keys()].map( r => node_state.output.getPortName( r ) ) : [];
+  module.exports.getOutputPorts = getOutputPorts = () => node_state.output ? [...Array(node_state.output.getPortCount()).keys()].map( r => node_state.output.getPortName( r ) ) : [];
   module.exports.getInputPorts = getInputPorts = () => node_state.input ? [...Array(node_state.input.getPortCount()).keys()].map( r => node_state.input.getPortName( r ) ) : [];
+  module.exports.getOutputPort = getOutputPort = () => node_state.output.isPortOpen() && detected_output_index >= 0 ? node_state.output.getPortName( detected_output_index ) : undefined;
+  module.exports.getInputPort = getInputPort = () => node_state.input.isPortOpen() && detected_input_index >= 0 ? node_state.input.getPortName( detected_input_index ) : undefined;
 }
 
 
@@ -845,8 +974,11 @@ function useElectronBrowser( ipcRenderer ) {
     "setVerbose",
     "seqStart",
     "seqStop",
-    "getPorts",
+    "seqPattern",
+    "getOutputPorts",
     "getInputPorts",
+    "getOutputPort",
+    "getInputPort",
   ].forEach( r => bind( r ) );
 
   module.exports.setHandler = (...args) => {
