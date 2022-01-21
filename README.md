@@ -2,12 +2,10 @@
 
 A performance Editor/Programmer for the Behringer TD3 running on Raspberry Pi Touchscreen
 
-```
-I always liked the RD8 and RD9 for intuitive live 
+"I always liked the RD8 and RD9 for intuitive live 
 performance editing of sequences, and was bummed 
 when the TD3 didnt give us similar capabilities, 
-so this touchscreen device is meant to fix that :)
-```
+so this touchscreen device is meant to fix that :)"
 
 - **Edit While Playing:**   Edit patterns **while playing** during performance.  We can easily edit/tweak/evolve RD8/RD9 patterns while playing, why not TD3 also?
 - **Intuitive Piano Roll:**  Intuitive piano roll note editing similar to SynthTribe or other popular MIDI editors.  Go beyond the "random" note generator, precisely craft/evolve patterns.
